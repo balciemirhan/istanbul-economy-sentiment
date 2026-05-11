@@ -42,9 +42,13 @@ Projenin en can alıcı noktası, spam veriyi eleyip sadece "kaliteli halk gör�
 - X (Twitter) API Developer Hesabı ve Bearer Token
 
 ### 2. Kurulum
-Projeyi klonladıktan sonra terminalde şu adımları izleyin:
+Terminalinizi açın ve projeyi bilgisayarınıza klonlayın:
 
 ```bash
+# Projeyi klonlayın ve klasöre girin
+git clone https://github.com/balciemirhan/istanbul-economy-sentiment.git
+cd istanbul-economy-sentiment
+
 # Bağımlılıkları yükleyin
 pip install -r requirements.txt
 ```
