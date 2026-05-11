@@ -1,0 +1,522 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>İstanbul Ekonomi - Yönetim Paneli</title>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --bg: #0a0e17;
+    --card: #111827;
+    --card-border: #1e293b;
+    --text: #e2e8f0;
+    --text-dim: #64748b;
+    --positive: #10b981;
+    --negative: #ef4444;
+    --neutral: #f59e0b;
+    --accent: #6366f1;
+    --accent-glow: rgba(99, 102, 241, 0.15);
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Outfit', sans-serif;
+    min-height: 100vh;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(99, 102, 241, 0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(99, 102, 241, 0.03) 1px, transparent 1px);
+    background-size: 60px 60px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .container {
+    max-width: 1000px;
+    margin: 0 auto;
+    padding: 40px 24px;
+    position: relative;
+    z-index: 1;
+  }
+
+  .header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 40px;
+  }
+
+  .header h1 {
+    font-size: 32px;
+    font-weight: 700;
+  }
+
+  .back-btn {
+    padding: 10px 20px;
+    background: var(--card);
+    border: 1px solid var(--card-border);
+    border-radius: 8px;
+    color: var(--text);
+    text-decoration: none;
+    font-weight: 500;
+    transition: 0.2s;
+  }
+
+  .back-btn:hover { border-color: var(--accent); }
+
+  .grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+  }
+
+  .card {
+    background: var(--card);
+    border: 1px solid var(--card-border);
+    border-radius: 16px;
+    padding: 28px;
+  }
+
+  .card h3 {
+    font-size: 18px;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  /* Progress Bar */
+  .progress-wrap { margin-bottom: 10px; }
+  .progress-info {
+    display: flex; justify-content: space-between;
+    font-size: 14px; color: var(--text-dim); margin-bottom: 8px;
+  }
+  .progress-bar {
+    width: 100%; height: 12px;
+    background: var(--bg);
+    border-radius: 10px; overflow: hidden;
+    border: 1px solid var(--card-border);
+  }
+  .progress-fill {
+    height: 100%; background: var(--accent);
+    transition: width 0.5s ease;
+  }
+
+  /* Keywords */
+  .tag-container {
+    display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 20px;
+  }
+  .tag {
+    background: rgba(99, 102, 241, 0.1);
+    border: 1px solid rgba(99, 102, 241, 0.3);
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-size: 13px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .tag span { color: var(--text-dim); font-size: 11px; text-transform: uppercase;}
+  .tag button {
+    background: none; border: none; color: var(--negative); cursor: pointer;
+    font-weight: bold; font-size: 14px;
+  }
+
+  .input-group { display: flex; gap: 10px; }
+  .input-group input, .input-group select {
+    padding: 10px;
+    background: var(--bg);
+    border: 1px solid var(--card-border);
+    border-radius: 8px;
+    color: var(--text);
+    outline: none;
+  }
+  .input-group input { flex: 1; }
+  .btn {
+    padding: 10px 20px;
+    background: var(--accent);
+    border: none;
+    border-radius: 8px;
+    color: white;
+    font-weight: 600;
+    cursor: pointer;
+    transition: 0.2s;
+  }
+  .btn:hover { background: #4f46e5; }
+  .btn:disabled { background: var(--text-dim); cursor: not-allowed; }
+
+  /* Logger */
+  .log-box {
+    background: #000;
+    border: 1px solid var(--card-border);
+    border-radius: 8px;
+    padding: 16px;
+    height: 200px;
+    overflow-y: auto;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    color: #10b981;
+    margin-top: 16px;
+  }
+  .log-box p { margin-bottom: 4px; }
+  .log-box p.info { color: #60a5fa; }
+  .log-box p.error { color: #ef4444; }
+
+  .big-btn {
+    width: 100%;
+    padding: 16px;
+    font-size: 16px;
+    margin-top: 20px;
+  }
+
+  /* Loader */
+  .loader {
+    display: none;
+    width: 24px;
+    height: 24px;
+    border: 3px solid rgba(255,255,255,0.3);
+    border-radius: 50%;
+    border-top-color: #fff;
+    animation: spin 1s ease-in-out infinite;
+    margin: 0 auto;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* Modal (Dialog) Styles */
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0, 0, 0, 0.8);
+    backdrop-filter: blur(5px);
+    z-index: 1000;
+    align-items: center;
+    justify-content: center;
+  }
+  .modal-content {
+    background: var(--card);
+    border: 1px solid var(--card-border);
+    border-radius: 16px;
+    padding: 32px;
+    text-align: center;
+    max-width: 400px;
+    width: 90%;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+  }
+  .modal-title { font-size: 20px; font-weight: 700; margin-bottom: 16px; color: var(--text); }
+  .modal-text { color: var(--text-dim); margin-bottom: 24px; font-size: 15px; }
+  .countdown-circle {
+    width: 80px; height: 80px;
+    border-radius: 50%;
+    background: rgba(99, 102, 241, 0.1);
+    border: 2px solid var(--accent);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 32px; font-weight: 800; font-family: 'JetBrains Mono', monospace;
+    color: var(--accent);
+    margin: 0 auto 24px auto;
+  }
+  .modal-actions { display: flex; gap: 12px; justify-content: center; }
+  .btn-cancel { background: var(--card); border: 1px solid var(--card-border); color: var(--text); }
+  .btn-cancel:hover { border-color: var(--negative); color: var(--negative); }
+
+  @media (max-width: 768px) {
+    .grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<div class="container">
+  <div class="header">
+    <h1>⚙️ Yönetim Paneli</h1>
+    <a href="/" class="back-btn">← Dashboard'a Dön</a>
+  </div>
+
+  <div class="grid">
+    <!-- Sol Taraf -->
+    <div>
+      <div class="card" style="margin-bottom: 24px;">
+        <h3>📊 API Kullanım Kotası (Aylık)</h3>
+        <div class="progress-wrap">
+          <div class="progress-info">
+            <span>Kullanılan Tweet Sayısı</span>
+            <span id="usage-text">Yükleniyor...</span>
+          </div>
+          <div class="progress-bar">
+            <div class="progress-fill" id="usage-fill" style="width: 0%;"></div>
+          </div>
+        </div>
+        <p style="font-size: 12px; color: var(--text-dim); margin-top: 8px;">
+          *Ücretsiz X API hesabınızın aylık limiti 10.000 tweet'tir.
+        </p>
+      </div>
+
+      <div class="card">
+        <h3>🚀 Veri Çekme Merkezi</h3>
+        <p style="font-size: 14px; color: var(--text-dim); margin-bottom: 16px;">
+          Aşağıdaki kontroller ile X üzerinden geçmişe dönük güncel veri çekimi başlatabilirsiniz.
+        </p>
+
+        <div style="display: flex; gap: 16px; margin-bottom: 16px;">
+          <div style="flex: 1;">
+            <label style="font-size: 13px; color: var(--text-dim); display: block; margin-bottom: 6px;">Hedef Tweet Sayısı</label>
+            <input type="number" id="inputMaxTweets" value="100" min="10" step="10" style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid var(--card-border); background: var(--bg); color: white; font-family: 'JetBrains Mono', monospace;">
+          </div>
+          <div style="flex: 1;">
+            <label style="font-size: 13px; color: var(--text-dim); display: block; margin-bottom: 6px;">Taranacak Gün Sayısı</label>
+            <input type="number" id="inputDays" value="7" min="1" max="7" style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid var(--card-border); background: var(--bg); color: white; font-family: 'JetBrains Mono', monospace;">
+          </div>
+        </div>
+        
+        <button id="fetchBtn" class="btn big-btn" onclick="showFetchModal()">
+          <span id="fetchText">Veri Çekimini Başlat</span>
+          <div id="fetchLoader" class="loader"></div>
+        </button>
+
+        <div class="log-box" id="logBox">
+          <p>Sistem Hazır. Bekleniyor...</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Sağ Taraf -->
+    <div class="card">
+      <h3>🔍 Dinamik Filtre Kelimeleri</h3>
+      <p style="font-size: 13px; color: var(--text-dim); margin-bottom: 20px;">
+        "İstanbul" kelimesi zorunludur. Buradaki kelimelerden en az biri geçiyorsa tweet yakalanır (OR mantığı).
+      </p>
+
+      <div class="progress-wrap" style="margin-bottom: 20px;">
+        <div class="progress-info">
+          <span>X API Karakter Limiti (Sorgu Uzunluğu)</span>
+          <span id="char-limit-text">Hesaplanıyor...</span>
+        </div>
+        <div class="progress-bar">
+          <div class="progress-fill" id="char-limit-fill" style="width: 0%; background: var(--accent);"></div>
+        </div>
+      </div>
+
+      <div class="tag-container" id="keywordList">
+        <!-- Kelimeler JS ile buraya gelecek -->
+      </div>
+
+      <div style="border-top: 1px solid var(--card-border); margin: 20px 0;"></div>
+
+      <h4 style="margin-bottom: 12px; font-size: 14px;">Yeni Kelime Ekle</h4>
+      <div class="input-group">
+        <input type="text" id="newKw" placeholder="Örn: araba">
+        
+        <!-- Dinamik Datalist: Kullanıcı listeden de seçebilir, kendisi de yazabilir -->
+        <input list="catList" id="newCat" placeholder="Kategori (Örn: trafik)">
+        <datalist id="catList">
+          <!-- Kategoriler JS ile buraya yüklenecek -->
+        </datalist>
+
+        <button class="btn" onclick="addKeyword()">Ekle</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Countdown Modal -->
+<div class="modal-overlay" id="fetchModal">
+  <div class="modal-content">
+    <div class="modal-title">⚠️ Veri Çekimi Başlıyor</div>
+    <div class="modal-text">Bu işlem API kotanızdan harcayacaktır. Onaylıyorsanız bekleyin veya hemen devam edin.</div>
+    <div class="countdown-circle" id="countdownTimer">10</div>
+    <div class="modal-actions">
+      <button class="btn btn-cancel" onclick="cancelFetch()">İptal Et</button>
+      <button class="btn" onclick="executeFetch()">Hemen Başla</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  let statusInterval = null;
+  let countdownInterval = null;
+  let countdownValue = 10;
+
+  async function loadData() {
+    loadUsage();
+    loadKeywords();
+    checkStatus(); // Eğer arkaplanda çalışan işlem varsa onu da yakalar
+  }
+
+  async function loadUsage() {
+    try {
+      const res = await fetch('/api/usage');
+      const data = await res.json();
+      document.getElementById('usage-text').innerText = `${data.used.toLocaleString()} / ${data.limit.toLocaleString()}`;
+      document.getElementById('usage-fill').style.width = `${data.percentage}%`;
+      if (data.percentage > 80) document.getElementById('usage-fill').style.background = 'var(--negative)';
+    } catch(e) { console.error(e); }
+  }
+
+  async function loadKeywords() {
+    try {
+      const res = await fetch('/api/keywords');
+      const keywords = await res.json();
+      const list = document.getElementById('keywordList');
+      list.innerHTML = keywords.map(k => `
+        <div class="tag">
+          ${k.word} <span>(${k.category})</span>
+          <button onclick="deleteKeyword(${k.id})">×</button>
+        </div>
+      `).join('');
+
+      // Benzersiz kategorileri bulup datalist'e ekle
+      const uniqueCats = [...new Set(keywords.map(k => k.category))];
+      const dataList = document.getElementById('catList');
+      dataList.innerHTML = uniqueCats.map(cat => `<option value="${cat}">`).join('');
+
+      // X API Sorgu Karakter Hesaplaması
+      const words = keywords.map(k => k.word);
+      const queryStr = '(istanbul OR i̇stanbul) (' + words.join(' OR ') + ') lang:tr -is:retweet -is:nullcast';
+      const qLen = queryStr.length;
+      const qPct = Math.min(100, Math.round((qLen / 512) * 100));
+      
+      const limitText = document.getElementById('char-limit-text');
+      const limitFill = document.getElementById('char-limit-fill');
+      
+      if(limitText && limitFill) {
+        limitText.innerText = `${qLen} / 512 Karakter`;
+        limitFill.style.width = `${qPct}%`;
+        
+        if (qLen > 512) {
+          limitFill.style.background = 'var(--negative)';
+          limitText.style.color = 'var(--negative)';
+          limitText.innerText = `${qLen} / 512 (Aşıldı - Son kelimeler kırpılacak)`;
+        } else if (qLen > 450) {
+          limitFill.style.background = 'orange';
+          limitText.style.color = 'orange';
+        } else {
+          limitFill.style.background = '#10b981'; // green / positive
+          limitText.style.color = 'var(--text-dim)';
+        }
+      }
+
+    } catch(e) { console.error(e); }
+  }
+
+  async function addKeyword() {
+    const word = document.getElementById('newKw').value.trim();
+    const cat = document.getElementById('newCat').value.trim() || 'genel';
+    if(!word) return;
+
+    try {
+      await fetch('/api/keywords', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({word: word, category: cat})
+      });
+      document.getElementById('newKw').value = '';
+      document.getElementById('newCat').value = '';
+      loadKeywords();
+    } catch(e) { alert("Eklenemedi"); }
+  }
+
+  async function deleteKeyword(id) {
+    if(!confirm("Silmek istediğinize emin misiniz?")) return;
+    try {
+      await fetch(`/api/keywords/${id}`, { method: 'DELETE' });
+      loadKeywords();
+    } catch(e) { console.error(e); }
+  }
+
+  // --- Modal & Countdown Mantığı ---
+  function showFetchModal() {
+    document.getElementById('fetchModal').style.display = 'flex';
+    countdownValue = 10;
+    document.getElementById('countdownTimer').innerText = countdownValue;
+    
+    countdownInterval = setInterval(() => {
+      countdownValue--;
+      document.getElementById('countdownTimer').innerText = countdownValue;
+      if(countdownValue <= 0) {
+        clearInterval(countdownInterval);
+        executeFetch();
+      }
+    }, 1000);
+  }
+
+  function cancelFetch() {
+    clearInterval(countdownInterval);
+    document.getElementById('fetchModal').style.display = 'none';
+  }
+
+  async function executeFetch() {
+    clearInterval(countdownInterval);
+    document.getElementById('fetchModal').style.display = 'none';
+    
+    const maxTweets = document.getElementById('inputMaxTweets').value;
+    const days = document.getElementById('inputDays').value;
+    
+    try {
+      const res = await fetch('/api/fetch-data', { 
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ max_tweets: parseInt(maxTweets), days: parseInt(days) })
+      });
+      const data = await res.json();
+      if(data.success) {
+        startTracking();
+      } else {
+        alert(data.error);
+      }
+    } catch(e) { alert("Başlatılamadı"); }
+  }
+
+  function startTracking() {
+    document.getElementById('fetchText').style.display = 'none';
+    document.getElementById('fetchLoader').style.display = 'block';
+    document.getElementById('fetchBtn').disabled = true;
+    
+    statusInterval = setInterval(checkStatus, 1000);
+  }
+
+  async function checkStatus() {
+    try {
+      const res = await fetch('/api/fetch-status');
+      const data = await res.json();
+      
+      const logBox = document.getElementById('logBox');
+      logBox.innerHTML = data.logs.map(log => {
+        let cls = "info";
+        if (log.includes("Hata") || log.includes("Error")) cls = "error";
+        return `<p class="${cls}">> ${log}</p>`;
+      }).join('');
+      
+      logBox.scrollTop = logBox.scrollHeight;
+
+      if(data.is_running) {
+        document.getElementById('fetchText').style.display = 'none';
+        document.getElementById('fetchLoader').style.display = 'block';
+        document.getElementById('fetchBtn').disabled = true;
+      } else {
+        // Eğer durduysa (ve daha önce çalışıyor olduğunu biliyorsak)
+        if (statusInterval) {
+          clearInterval(statusInterval);
+          statusInterval = null;
+          document.getElementById('fetchText').style.display = 'block';
+          document.getElementById('fetchLoader').style.display = 'none';
+          document.getElementById('fetchBtn').disabled = false;
+          
+          alert("İşlem tamamlandı! Dashboard'a yönlendiriliyorsunuz.");
+          window.location.href = '/'; // Dashboarda dön
+        }
+      }
+    } catch(e) { console.error(e); }
+  }
+
+  // Sayfa yüklendiğinde çalıştır
+  loadData();
+</script>
+</body>
+</html>
