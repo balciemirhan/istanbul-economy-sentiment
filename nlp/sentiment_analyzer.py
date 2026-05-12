@@ -37,6 +37,15 @@ class SentimentAnalyzer:
         # Eğer temizlenmiş metin boşsa, nötr dön
         if not clean_text:
              return {"sentiment": "notr", "score": 0.0, "is_ironic": False}
+             
+        # BÜYÜK HARF TERBİYECİSİ (Shouting Bias Fix)
+        # Metindeki harflerin (noktalama hariç) %60'ından fazlası büyük harfse,
+        # model bunu öfke/bağırma sanmasın diye metni "Sadece baş harfi büyük" formata çevir.
+        alpha_chars = [c for c in clean_text if c.isalpha()]
+        if alpha_chars:
+            upper_ratio = sum(1 for c in alpha_chars if c.isupper()) / len(alpha_chars)
+            if upper_ratio > 0.60:
+                clean_text = clean_text.capitalize()
         
         # 2. BERT Analizi
         try:

@@ -115,6 +115,18 @@
   .tag-container {
     display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 20px;
   }
+  .keyword-list-wrapper {
+    max-height: 350px;
+    overflow-y: auto;
+    padding-right: 10px;
+    margin-bottom: 20px;
+  }
+  /* Özel scrollbar */
+  .keyword-list-wrapper::-webkit-scrollbar { width: 6px; }
+  .keyword-list-wrapper::-webkit-scrollbar-track { background: var(--bg); border-radius: 4px; }
+  .keyword-list-wrapper::-webkit-scrollbar-thumb { background: var(--card-border); border-radius: 4px; }
+  .keyword-list-wrapper::-webkit-scrollbar-thumb:hover { background: var(--accent); }
+  
   .tag {
     background: rgba(99, 102, 241, 0.1);
     border: 1px solid rgba(99, 102, 241, 0.3);
@@ -253,8 +265,8 @@
             <div class="progress-fill" id="usage-fill" style="width: 0%;"></div>
           </div>
         </div>
-        <p style="font-size: 12px; color: var(--text-dim); margin-top: 8px;">
-          *Ücretsiz X API hesabınızın aylık limiti 10.000 tweet'tir.
+        <p id="usage-helper-text" style="font-size: 12px; color: var(--text-dim); margin-top: 8px;">
+          *X API hesabınızın aylık limiti hesaplanıyor...
         </p>
       </div>
 
@@ -293,17 +305,9 @@
         "İstanbul" kelimesi zorunludur. Buradaki kelimelerden en az biri geçiyorsa tweet yakalanır (OR mantığı).
       </p>
 
-      <div class="progress-wrap" style="margin-bottom: 20px;">
-        <div class="progress-info">
-          <span>X API Karakter Limiti (Sorgu Uzunluğu)</span>
-          <span id="char-limit-text">Hesaplanıyor...</span>
-        </div>
-        <div class="progress-bar">
-          <div class="progress-fill" id="char-limit-fill" style="width: 0%; background: var(--accent);"></div>
-        </div>
-      </div>
 
-      <div class="tag-container" id="keywordList">
+
+      <div class="keyword-list-wrapper" id="keywordList">
         <!-- Kelimeler JS ile buraya gelecek -->
       </div>
 
@@ -338,6 +342,28 @@
   </div>
 </div>
 
+<!-- Success Modal -->
+<div class="modal-overlay" id="successModal">
+  <div class="modal-content" style="border-color: var(--positive); box-shadow: 0 10px 25px rgba(16, 185, 129, 0.2);">
+    <div class="countdown-circle" style="border-color: var(--positive); color: var(--positive); background: rgba(16, 185, 129, 0.1);">✓</div>
+    <div class="modal-title" style="color: var(--positive);">İşlem Başarılı!</div>
+    <div class="modal-text">Verileriniz analiz edildi ve veritabanına kaydedildi. Dashboard'a yönlendiriliyorsunuz...</div>
+    <div class="loader" style="display:block; border-color: rgba(16, 185, 129, 0.2); border-top-color: var(--positive); margin-top: 20px;"></div>
+  </div>
+</div>
+
+<!-- Error Modal -->
+<div class="modal-overlay" id="errorModal">
+  <div class="modal-content" style="border-color: var(--negative); box-shadow: 0 10px 25px rgba(239, 68, 68, 0.2);">
+    <div class="countdown-circle" style="border-color: var(--negative); color: var(--negative); background: rgba(239, 68, 68, 0.1);">!</div>
+    <div class="modal-title" style="color: var(--negative);">Veri Çekilemedi</div>
+    <div class="modal-text" id="errorText">Kota dolmuş veya tweet bulunamamış olabilir. Hatanın sebebini görmek için arka plan işlem loglarını (Siyah Ekran) inceleyin.</div>
+    <div class="modal-actions">
+      <button class="btn btn-cancel" style="width: 100%; border-color: var(--negative); color: var(--negative);" onclick="document.getElementById('errorModal').style.display='none'">Kapat ve Loglara Bak</button>
+    </div>
+  </div>
+</div>
+
 <script>
   let statusInterval = null;
   let countdownInterval = null;
@@ -354,6 +380,7 @@
       const res = await fetch('/api/usage');
       const data = await res.json();
       document.getElementById('usage-text').innerText = `${data.used.toLocaleString()} / ${data.limit.toLocaleString()}`;
+      document.getElementById('usage-helper-text').innerText = `*X API hesabınızın aylık limiti ${data.limit.toLocaleString()} tweet'tir.`;
       document.getElementById('usage-fill').style.width = `${data.percentage}%`;
       if (data.percentage > 80) document.getElementById('usage-fill').style.background = 'var(--negative)';
     } catch(e) { console.error(e); }
@@ -363,51 +390,81 @@
     try {
       const res = await fetch('/api/keywords');
       const keywords = await res.json();
+      // Kategorilere göre grupla
+      const categories = {};
+      keywords.forEach(k => {
+        if (!categories[k.category]) categories[k.category] = [];
+        categories[k.category].push(k);
+      });
+
       const list = document.getElementById('keywordList');
-      list.innerHTML = keywords.map(k => `
-        <div class="tag">
-          ${k.word} <span>(${k.category})</span>
-          <button onclick="deleteKeyword(${k.id})">×</button>
-        </div>
-      `).join('');
-
-      // Benzersiz kategorileri bulup datalist'e ekle
-      const uniqueCats = [...new Set(keywords.map(k => k.category))];
-      const dataList = document.getElementById('catList');
-      dataList.innerHTML = uniqueCats.map(cat => `<option value="${cat}">`).join('');
-
-      // X API Sorgu Karakter Hesaplaması
-      const words = keywords.map(k => k.word);
-      const queryStr = '(istanbul OR i̇stanbul) (' + words.join(' OR ') + ') lang:tr -is:retweet -is:nullcast';
-      const qLen = queryStr.length;
-      const qPct = Math.min(100, Math.round((qLen / 512) * 100));
+      list.innerHTML = '';
       
-      const limitText = document.getElementById('char-limit-text');
-      const limitFill = document.getElementById('char-limit-fill');
-      
-      if(limitText && limitFill) {
-        limitText.innerText = `${qLen} / 512 Karakter`;
-        limitFill.style.width = `${qPct}%`;
+      for (const [cat, kws] of Object.entries(categories)) {
+        // Bu kategori için API'ye gidecek gerçek sorgu uzunluğunu hesapla
+        const words = kws.map(k => k.word);
+        const queryStr = '(istanbul OR i̇stanbul) (' + words.join(' OR ') + ') lang:tr -is:retweet -is:nullcast';
+        const qLen = queryStr.length;
+        
+        let limitColor = 'var(--text-dim)';
+        let limitWarning = '';
+        let barColor = 'var(--accent)';
         
         if (qLen > 512) {
-          limitFill.style.background = 'var(--negative)';
-          limitText.style.color = 'var(--negative)';
-          limitText.innerText = `${qLen} / 512 (Aşıldı - Son kelimeler kırpılacak)`;
+            limitColor = 'var(--negative)';
+            barColor = 'var(--negative)';
+            limitWarning = ' ⚠️';
         } else if (qLen > 450) {
-          limitFill.style.background = 'orange';
-          limitText.style.color = 'orange';
-        } else {
-          limitFill.style.background = '#10b981'; // green / positive
-          limitText.style.color = 'var(--text-dim)';
+            limitColor = 'orange';
+            barColor = 'orange';
         }
+
+        const qPct = Math.min(100, Math.round((qLen / 512) * 100));
+        let displayCat = cat.replace('_', ' ').toUpperCase();
+        
+        let catHtml = `<div style="margin-bottom: 20px; width: 100%;">`;
+        
+        catHtml += `
+        <div style="margin-bottom: 10px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                <h4 style="color: var(--accent); font-size: 13px; letter-spacing: 0.5px; margin: 0;">🏷️ ${displayCat}</h4>
+                <span style="color: ${limitColor}; font-size: 11px; font-family: 'JetBrains Mono', monospace;">${qLen}/512${limitWarning}</span>
+            </div>
+            <div style="width: 100%; height: 4px; background: rgba(255,255,255,0.05); border-radius: 2px; overflow: hidden;">
+                <div style="height: 100%; width: ${qPct}%; background: ${barColor}; transition: width 0.5s ease;"></div>
+            </div>
+        </div>`;
+        
+        catHtml += `<div class="tag-container" style="margin-bottom: 0;">`;
+        catHtml += kws.map(k => `
+          <div class="tag">
+            ${k.word}
+            <button onclick="deleteKeyword(${k.id})">×</button>
+          </div>
+        `).join('');
+        catHtml += `</div></div>`;
+        list.innerHTML += catHtml;
       }
+
+      // Benzersiz kategorileri bulup datalist'e ekle
+      const uniqueCats = Object.keys(categories);
+      const dataList = document.getElementById('catList');
+      dataList.innerHTML = uniqueCats.map(cat => `<option value="${cat}">`).join('');
 
     } catch(e) { console.error(e); }
   }
 
   async function addKeyword() {
     const word = document.getElementById('newKw').value.trim();
-    const cat = document.getElementById('newCat').value.trim() || 'genel';
+    let cat = document.getElementById('newCat').value.trim();
+    
+    // Kategori adını otomatik olarak temizle (örneğin: "Teknoloji Marketi" -> "teknoloji_marketi")
+    if (cat) {
+      cat = cat.toLowerCase().replace(/\s+/g, '_');
+    } else {
+      cat = 'genel';
+    }
+    
     if(!word) return;
 
     try {
@@ -501,15 +558,24 @@
         document.getElementById('fetchBtn').disabled = true;
       } else {
         // Eğer durduysa (ve daha önce çalışıyor olduğunu biliyorsak)
-        if (statusInterval) {
+          if (statusInterval) {
           clearInterval(statusInterval);
           statusInterval = null;
           document.getElementById('fetchText').style.display = 'block';
           document.getElementById('fetchLoader').style.display = 'none';
           document.getElementById('fetchBtn').disabled = false;
           
-          alert("İşlem tamamlandı! Dashboard'a yönlendiriliyorsunuz.");
-          window.location.href = '/'; // Dashboarda dön
+          const logsText = data.logs.join(" ");
+          if (logsText.includes("kotaya ulaşıldı") || logsText.includes("bulunamadı") || logsText.includes("Hata")) {
+            // alert("⚠️ İşlem tamamlandı ancak veri çekilemedi...");
+            document.getElementById('errorModal').style.display = 'flex';
+          } else {
+            // alert("✅ İşlem başarıyla tamamlandı...");
+            document.getElementById('successModal').style.display = 'flex';
+            setTimeout(() => {
+                window.location.href = '/'; 
+            }, 2500); // 2.5 saniye animasyon izletip yönlendir
+          }
         }
       }
     } catch(e) { console.error(e); }

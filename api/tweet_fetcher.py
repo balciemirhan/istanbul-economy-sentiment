@@ -108,20 +108,16 @@ class TweetFetcher:
         self.filter = TweetFilter()
         self.monitor = LocalUsageMonitor()
 
-    def build_istanbul_query(self) -> str:
+    def build_istanbul_query(self, category_keywords: List[str] = None) -> str:
         # X API büyük/küçük harfe duyarsızdır, sadece 'istanbul' yazmak yeterlidir.
         istanbul_terms = ["istanbul", "i̇stanbul"]
         
-        # Veritabanından dinamik anahtar kelimeleri çekiyoruz
-        active_keywords_data = get_active_keywords()
-        topic_terms = [kw["word"] for kw in active_keywords_data]
-        
-        # Eğer henüz veritabanında kelime yoksa varsayılan bir tane koy (hata almamak için)
-        if not topic_terms:
-            topic_terms = ["ekonomi"]
+        # Eğer kategori kelimeleri verilmemişse varsayılan bir kelime ekle
+        if not category_keywords:
+            category_keywords = ["ekonomi"]
 
         istanbul_part = "(" + " OR ".join(istanbul_terms) + ")"
-        topic_part = "(" + " OR ".join(topic_terms) + ")"
+        topic_part = "(" + " OR ".join(category_keywords) + ")"
 
         # API limitlerine takılmamak için min_faves çıkarıldı, sadece sunucu taraflı çöp filtreleri bırakıldı.
         # Not: Halkın siyasiler/kurumlara yazdığı şikayetleri (reply) ve kanıtlı (link/foto) tweetleri 
@@ -136,8 +132,8 @@ class TweetFetcher:
 
     def fetch_tweets(self, max_tweets: int = 100, days: int = 7) -> List[dict]:
         """
-        API üzerinden belirlenen gün sayısına göre tweet çekerek
-        gerçek bir dağılım (trend) oluşturur.
+        API üzerinden belirlenen gün sayısına ve kategorilere göre tweet çekerek
+        gerçek bir dağılım (trend) oluşturur. Kotayı kategorilere ve günlere böler.
         """
         if not self.api:
             return []
@@ -146,110 +142,149 @@ class TweetFetcher:
             logger.error("Bütçe sınırı nedeniyle veri çekimi başlatılamıyor.")
             return []
 
-        query = self.build_istanbul_query()
-        logger.info(f"Optimize edilmiş sorgu ile 7 günlük X API araması başlıyor: {query}")
+        active_keywords_data = get_active_keywords()
+        
+        # Kategorilere ayır
+        categories = {}
+        for kw in active_keywords_data:
+            cat = kw.get("category", "genel")
+            if cat not in categories:
+                categories[cat] = []
+            categories[cat].append(kw["word"])
+            
+        if not categories:
+            categories = {"genel": ["ekonomi"]}
+            
+        num_categories = len(categories)
+        base_tweets_per_cat = max_tweets // num_categories
+        remainder_cat = max_tweets % num_categories
 
         all_tweets = []
         fetched_in_this_run = 0
         
         if days < 1: days = 1
         if days > 7: days = 7 # X API Basic Sınırı
-        
-        base_tweets_per_day = max_tweets // days
-        remainder = max_tweets % days
 
-        for day_offset in range(days, 0, -1):
-            tweets_per_day = base_tweets_per_day
-            # Kalan (küsurat) tweetleri en güncel güne (döngünün son adımı) ekliyoruz
-            if day_offset == 1:
-                tweets_per_day += remainder
+        for i, (cat_name, cat_keywords) in enumerate(categories.items()):
+            tweets_for_this_cat = base_tweets_per_cat
+            # Kalanı (remainder) son kategoriye ekle
+            if i == num_categories - 1:
+                tweets_for_this_cat += remainder_cat
                 
-            # X API minimum limiti her gün için 10'dur
-            if tweets_per_day < 10:
-                tweets_per_day = 10
+            if tweets_for_this_cat <= 0:
+                continue
 
-            # Örnek: day_offset=7 (7 gün öncesi), day_offset=6 (6 gün öncesi) vb.
-            # Twitter API 'Z' (UTC) beklediği için utcnow() kullanmalıyız. 
-            # API'nin "minimum 10 saniye geçmiş olmalı" kuralı için 15 saniyelik bir pay bırakıyoruz.
+            query = self.build_istanbul_query(cat_keywords)
+            logger.info(f"[{cat_name}] kategorisi için {days} günlük X API araması başlıyor: {query}")
+            
+            # KOTA İSRAFI ÖNLEYİCİ ALGORİTMA:
+            # Eğer günlere böldüğümüzde günlük hedef tweet 10'un altında kalıyorsa (API minimum limiti),
+            # gün gün bölüp her gün için zorla 10 tweet çekerek (israf yaparak) faturayı şişirmek yerine,
+            # tüm günleri tek bir zaman aralığında birleştirerek (tek request ile) noktası noktasına kota harcarız.
+            date_ranges = []
             now_utc = datetime.utcnow() - timedelta(seconds=15)
             
-            start_date = now_utc - timedelta(days=day_offset)
-            end_date = now_utc - timedelta(days=day_offset - 1)
-            
-            # Milisaniyeleri atarak temiz bir ISO formatı elde ediyoruz
-            start_time = start_date.replace(microsecond=0).isoformat() + "Z"
-            end_time = end_date.replace(microsecond=0).isoformat() + "Z"
-            
-            logger.info(f"{start_date.strftime('%Y-%m-%d')} tarihi için {tweets_per_day} tweet çekiliyor...")
-
-            try:
-                tweets_fetched_for_day = 0
-                next_token = None
-                
-                while tweets_fetched_for_day < tweets_per_day:
-                    current_max_results = min(100, tweets_per_day - tweets_fetched_for_day)
-                    if current_max_results < 10:
-                        current_max_results = 10
-
-                    response = self.api.get_recent_tweets(
-                        query=query,
-                        start_time=start_time,
-                        end_time=end_time,
-                        max_results=current_max_results,
-                        next_token=next_token
-                    )
-
-                    tweets = response.get("data", [])
-                    if not tweets:
-                        break
-                        
-                    raw_tweet_count = len(tweets)
-                    if raw_tweet_count > 0:
-                        self.monitor.add_usage(raw_tweet_count)
-                        fetched_in_this_run += raw_tweet_count
-                        tweets_fetched_for_day += raw_tweet_count
-
-                    includes = response.get("includes", {})
-                    users = includes.get("users", [])
-
-                    for item in tweets:
-                        author_id = item.get("author_id")
-                        user = next((u for u in users if u.get("id") == author_id), {})
-
-                        # TweetFilter'ın bekleği format
-                        tweet_data = {
-                            **item,
-                            "author": user
-                        }
-
-                        if self.filter.is_valid_tweet(tweet_data):
-                            # Gelen tweet'i sistemin geri kalanının beklediği formata çeviriyoruz (Apify formatına benzetiyoruz)
-                            formatted_tweet = self._parse_item(item, user)
-                            all_tweets.append(formatted_tweet)
-                            
-                    meta = response.get("meta", {})
-                    next_token = meta.get("next_token")
+            if (tweets_for_this_cat // days) < 10 and days > 1:
+                logger.info(f"[{cat_name}] Hedef kota dar olduğu için günlere bölünmeden tek potada çekilecek (İsraf Önleyici Aktif).")
+                start_date = now_utc - timedelta(days=days)
+                date_ranges.append({
+                    "start": start_date,
+                    "end": now_utc,
+                    "target": max(10, tweets_for_this_cat) # En az 10 olmak zorunda
+                })
+            else:
+                base_tweets_per_day = tweets_for_this_cat // days
+                remainder_day = tweets_for_this_cat % days
+                for day_offset in range(days, 0, -1):
+                    target = base_tweets_per_day
+                    if day_offset == 1:
+                        target += remainder_day
                     
-                    if not next_token:
-                        break
+                    s_date = now_utc - timedelta(days=day_offset)
+                    e_date = now_utc - timedelta(days=day_offset - 1)
+                    date_ranges.append({
+                        "start": s_date,
+                        "end": e_date,
+                        "target": max(10, target)
+                    })
+
+            for dr in date_ranges:
+                tweets_per_day = dr["target"]
+                
+                # Milisaniyeleri atarak temiz bir ISO formatı elde ediyoruz
+                start_time = dr["start"].replace(microsecond=0).isoformat() + "Z"
+                end_time = dr["end"].replace(microsecond=0).isoformat() + "Z"
+                
+                logger.info(f"[{cat_name}] {dr['start'].strftime('%Y-%m-%d')} tarihi için {tweets_per_day} tweet çekiliyor...")
+
+                try:
+                    tweets_fetched_for_day = 0
+                    next_token = None
+                    
+                    while tweets_fetched_for_day < tweets_per_day:
+                        current_max_results = min(100, tweets_per_day - tweets_fetched_for_day)
+                        if current_max_results < 10:
+                            current_max_results = 10
+
+                        response = self.api.get_recent_tweets(
+                            query=query,
+                            start_time=start_time,
+                            end_time=end_time,
+                            max_results=current_max_results,
+                            next_token=next_token
+                        )
+
+                        tweets = response.get("data", [])
+                        if not tweets:
+                            break
+                            
+                        raw_tweet_count = len(tweets)
+                        if raw_tweet_count > 0:
+                            self.monitor.add_usage(raw_tweet_count)
+                            fetched_in_this_run += raw_tweet_count
+                            tweets_fetched_for_day += raw_tweet_count
+
+                        includes = response.get("includes", {})
+                        users = includes.get("users", [])
+
+                        for item in tweets:
+                            author_id = item.get("author_id")
+                            user = next((u for u in users if u.get("id") == author_id), {})
+
+                            # TweetFilter'ın bekleği format
+                            tweet_data = {
+                                **item,
+                                "author": user
+                            }
+
+                            if self.filter.is_valid_tweet(tweet_data):
+                                # Gelen tweet'i sistemin geri kalanının beklediği formata çeviriyoruz (Apify formatına benzetiyoruz)
+                                formatted_tweet = self._parse_item(item, user)
+                                all_tweets.append(formatted_tweet)
+                                
+                        meta = response.get("meta", {})
+                        next_token = meta.get("next_token")
                         
+                        if not next_token:
+                            break
+                            
+                        if not self.monitor.check_budget_limit():
+                            logger.warning("Çekim esnasında aylık limite ulaşıldı. İşlem durduruluyor.")
+                            break
+                            
+                        time.sleep(config.REQUEST_DELAY)
+
+                    logger.info(f"[{cat_name}] Bu günden {tweets_fetched_for_day} raw tweet çekildi, Kaliteli Toplam (Kümülatif): {len(all_tweets)}")
+
                     if not self.monitor.check_budget_limit():
-                        logger.warning("Çekim esnasında aylık limite ulaşıldı. İşlem durduruluyor.")
                         break
                         
                     time.sleep(config.REQUEST_DELAY)
 
-                logger.info(f"Bu günden {tweets_fetched_for_day} raw tweet çekildi, Kaliteli Toplam (Kümülatif): {len(all_tweets)}")
-
-                if not self.monitor.check_budget_limit():
-                    break
-                    
-                time.sleep(config.REQUEST_DELAY)
-
-            except Exception as e:
-                logger.error(f"{start_date.strftime('%Y-%m-%d')} hatası: {e}")
-                # Hata olsa bile diğer günlere geçmesi için break yerine pass/continue yapıyoruz
-                continue
+                except Exception as e:
+                    logger.error(f"[{cat_name}] {start_date.strftime('%Y-%m-%d')} hatası: {e}")
+                    # Hata olsa bile diğer günlere geçmesi için break yerine pass/continue yapıyoruz
+                    continue
 
         return all_tweets
 

@@ -1,9 +1,12 @@
 import os
 import datetime
+import logging
 from sqlalchemy import create_engine, func
 from sqlalchemy.orm import sessionmaker
 from database.models import Base, Tweet, Keyword
 from config import DB_NAME
+
+logger = logging.getLogger(__name__)
 
 # SQLite Bağlantısı (Proje kök dizininde DB_NAME ile oluşturulacak)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -39,7 +42,7 @@ def save_tweet(tweet_data):
             db.commit()
     except Exception as e:
         db.rollback()
-        print(f"Tweet kaydedilirken hata oluştu: {e}")
+        logger.error(f"Tweet kaydedilirken hata oluştu: {e}")
     finally:
         db.close()
 
@@ -86,7 +89,7 @@ def save_tweets_bulk(tweets_list):
             db.commit()
     except Exception as e:
         db.rollback()
-        print(f"Toplu tweet kaydedilirken hata oluştu: {e}")
+        logger.error(f"Toplu tweet kaydedilirken hata oluştu: {e}")
     finally:
         db.close()
 
@@ -112,19 +115,16 @@ def get_dashboard_stats():
         db.close()
 
 def seed_keywords_if_empty():
-    """Tablo boşsa varsayılan kelimeleri ekler."""
+    """Tablo boşsa yeni varsayılan kelimeleri ekler. Dinamik eklenenleri silmez."""
     db = SessionLocal()
     try:
         count = db.query(Keyword).count()
         if count == 0:
             default_topics = {
-                "ekonomi": ["enflasyon", "ekonomi", "para", "maaş", "zam", "pahalı", "ucuz",
-                            "alışveriş", "pazar", "dükkan", "işyeri", "mağaza", "esnaf", "ticaret"],
-                "ulasim": ["metro", "otobüs", "tramvay", "metrobüs", "Marmaray", "vapur",
-                          "dolmuş", "taksi", "otogar", "istasyon", "yol", "trafik", "ulaşım"],
-                "turizm_ito": ["turizm", "otel", "ziyaretçi", "İTO", "İstanbul Ticaret Odası",
-                              "restorasyon", "müzeler", "tarihi yerler", "boğaz", "saray"],
-                "gayrimenkul": ["kiralık", "satılık", "ev", "daire", "konut", "emlak", "fiyat"]
+                "makro_ekonomi": ["enflasyon", "asgari ücret", "fatura", "pahalılık", "alım gücü", "zam geldi", "geçim derdi", "kredi kartı", "maaş", "gelir", "gıda fiyatı"],
+                "ulasim_lojistik": ["mazot", "benzin", "akaryakıt zammı", "akbil", "iett zammı", "toplu taşıma ücreti", "taksi zammı", "köprü geçiş ücreti", "metrobüs zammı", "marmaray ücreti", "otobüs bileti"],
+                "gayrimenkul_insaat": ["kira", "ev sahibi", "depozito", "emlak", "konut fiyatları", "aidat", "kiralık daire", "satılık ev", "ev fiyatı", "konut kredisi"],
+                "ticaret_perakende": ["esnaf", "market fiyatları", "pazar arabası", "fahiş fiyat", "etiket fiyatı", "gramaj", "kasiyer", "mağaza fiyatları", "işyeri kirası", "ticaret odası"]
             }
             objects_to_save = []
             for category, words in default_topics.items():
@@ -132,10 +132,10 @@ def seed_keywords_if_empty():
                     objects_to_save.append(Keyword(word=word, category=category))
             db.bulk_save_objects(objects_to_save)
             db.commit()
-            print("Varsayılan filtreleme kelimeleri veritabanına eklendi.")
+            logger.info("Varsayılan filtreleme kelimeleri veritabanına ilk kez eklendi.")
     except Exception as e:
         db.rollback()
-        print(f"Varsayılan kelimeler eklenirken hata oluştu: {e}")
+        logger.error(f"Kelimeler güncellenirken hata oluştu: {e}")
     finally:
         db.close()
 
@@ -188,7 +188,7 @@ def get_recent_tweet_texts(days=7):
         recent_tweets = db.query(Tweet.text).filter(Tweet.created_at >= cutoff_date).all()
         return [t[0] for t in recent_tweets if t[0]]
     except Exception as e:
-        print(f"Geçmiş tweet metinleri çekilirken hata: {e}")
+        logger.error(f"Geçmiş tweet metinleri çekilirken hata: {e}")
         return []
     finally:
         db.close()

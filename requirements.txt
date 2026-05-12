@@ -25,3 +25,5 @@ fpdf2
 # Utils
 python-dotenv
 pandas
+thefuzz
+python-Levenshtein

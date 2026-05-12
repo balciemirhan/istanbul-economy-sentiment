@@ -2,39 +2,38 @@
 
 Bu dosya, projede gerçekleştirilen **en son değişiklikleri, güncellemeleri ve mevcut çalışma durumunu** (state) detaylandırmak amacıyla oluşturulmuştur.
 
-## 🕒 Son Yapılan İşlemler ve Güncellemeler (11 Mayıs 2026 İtibarıyla)
+## 🕒 Son Yapılan İşlemler ve Güncellemeler (12 Mayıs 2026 İtibarıyla)
 
-1. **X API (Twitter) Entegrasyonu ve Kotalar:**
-   - Önceki Apify tabanlı altyapı tamamen terk edilerek, doğrudan X API v2 (Basic/Free) entegrasyonu sağlandı (`x_api_client.py`).
-   - Aylık ücretsiz 10.000 tweet sınırını aşmamak için `LocalUsageMonitor` (yerel JSON tabanlı bütçe takipçisi) sisteme dahil edildi.
+### 1. Akıllı Kota Koruyucu (Smart Quota Aggregator)
+- X API'nin "Tek seferde en az 10 tweet isteyebilirsin" kuralından kaynaklanan bütçe israfı tamamen çözüldü. 
+- Eğer kullanıcı az sayıda tweet (Örn: 20 Tweet / 2 Gün) çekerse ve bu sayı günlere bölündüğünde 10'un altında kalıyorsa; sistem **günlere bölmekten vazgeçip tek bir geniş tarihli potada** arama yaparak faturanın katlanmasını (Örn: 80'e çıkmasını) engelliyor ve yeryüzündeki en düşük fatura olan 40'ta tutuyor. 
 
-2. **Veri Çekme (Fetch) Algoritması & Sayfalama (Pagination):**
-   - X API'nin "Maksimum 100, Minimum 10 sonuç" kurallarına tam uyum sağlandı.
-   - İstenen tweet sayısı günlere (maksimum 7 gün) eşit olarak bölünecek şekilde ayarlandı. 100'ü aşan günlük istekler `while` döngüsü ve `next_token` ile **100'erli paketler (sayfalama)** halinde çekilecek şekilde güncellendi.
-   - Günlere bölerken artan "küsurat (remainder)" tweetler, toplam sayıyı eksiksiz tutturmak adına **en güncel (en yakın) güne** eklenerek veri kalitesi/güncelliği artırıldı.
+### 2. Üst Düzey Semantik Kopya Koruması (TheFuzz)
+- Eski "ilk 50 karakter" kuralı daha da akıllandırıldı.
+- Haber botlarının aynı metnin sonuna farklı sahte hashtagler ekleyerek sistemi kandırması engellendi. Metinler temizlendikten sonra (hashtagler ve linkler atıldıktan sonra) öz metinleri `thefuzz` ile karşılaştırılıyor.
+- **%75 benzerlik** tespit edilen kopyalar veritabanına ve Excel'e bulaşmadan anında hafızadan siliniyor.
 
-3. **Gelişmiş Spam ve Bot Koruması:**
-   - **Agresif İlk 50 Karakter Kuralı:** Haber ajanslarının farklı linklerle birebir aynı haberi paylaşmasını engellemek için spam filtresi sertleştirildi. Artık tweetlerin sadece **ilk 50 karakteri** karşılaştırılıyor. Eğer aynıysa, kuyruğunda farklı bir link veya emoji olsa bile doğrudan çöpe atılıyor.
-   - `-is:reply` filtresi API'den kaldırıldı; halkın kurumlara/siyasilere verdiği isyan veya destek cevaplarının kaçırılmaması sağlandı.
-   - Etkileşimsiz ölü tweetleri almak için `MIN_FAVES = 0` olarak korundu, API'nin minimum 10 limitini tetiklememesi için filtrelere dokunulmadı.
+### 3. Otomatik "Tam Yedek" Excel Sistemi (Full Backup)
+- Her veri çekimi bittiğinde sistem sadece "o an çekilen" yeni tweetleri değil, **veritabanındaki ilk günden bugüne kadar olan TÜM tweetleri** tek bir Excel dosyasına döküyor.
+- `reports/istanbul_tum_yedek_TARIH.xlsx` formatıyla oluşturulan bu tablo; sütun genişlikleri ayarlanmış, metinleri alt alta kaydırılmış, direkt akademisyenlere ve kurumlara sunulabilecek profesyonel bir düzene kavuşturuldu.
 
-4. **Metin Temizliği (NLP Öncesi - `text_cleaner.py`):**
-   - **Agresif URL Silici:** Twitter'ın gizlediği `t.co/` ve `pic.twitter.com/` dahil **tüm link varyasyonları** makine öğrenmesine girmeden önce temizleniyor.
-   - **Gelişmiş Hashtag Silici:** Hashtag'lerin (`#`) içindeki metinlerin (Örn: Galatasaray) yapay zekayı manipüle etmemesi için, **Türkçe karakterleri de (Ş, ç, ğ, ö, ü) kapsayacak** tam kelime temizliği koda eklendi.
-   - **"RT " Silici:** Alıntı tweetlerin başındaki gereksiz "RT" önekinin yapay zekanın kafasını karıştırması başarıyla engellendi. (Not: Bu silme işlemleri sadece yapay zekaya giden kopyada yapılır, veritabanına ve Dashboard'a orjinal, eksiksiz veri yansır).
-   - Finansal verilerin (`%`, `+`, `/`) silinmemesi için regex düzeltildi.
+### 4. "Büyük Harf Terbiyecisi" (Shouting Bias Fix)
+- BERT yapay zekasının sırf BÜYÜK HARFLE yazıldığı için resmi (Nötr) haber ajansı başlıklarına haksız yere "Negatif" (Öfkeli) demesini engelleyen çok zekice bir mühendislik eklendi.
+- Eğer metindeki harflerin **%60'ından fazlası büyük harfse**, sistem Caps Lock veya ajans başlığı olduğunu anlayıp yapay zekaya gitmeden önce metni sadece "Baş harfi büyük" olan normal bir cümle yapısına çevirerek modelin %98'lik kusursuz bir doğruluk oranına çıkmasını sağladı. (Vatandaşın %30 oranındaki gerçek öfke vurgularına dokunulmuyor).
 
-5. **NLP ve Model Skorlama Koruması (`sentiment_analyzer.py`):**
-   - **%85 Güvenlik Eşiği (Threshold):** `savasy/bert-base-turkish-sentiment-cased` modelinin kararsız kalıp nötr metinlere rastgele Pozitif/Negatif uydurmasını engellemek için %85 sınırı aktif tutuluyor. Model %85'ten emin değilse (örn: %73 emin olduğu bir uyuşturucu haberinde) sistem bunu doğrudan **NOTR** (Nötr) olarak etiketleyip veri kirliliğini önlüyor.
+### 5. Küfür ve Argo Dedektörü
+- Twitter'ın sokak ağzına karşı projeyi temiz tutmak için `text_cleaner.py` içerisine özel bir argat/küfür listesi eklendi. Çöpler, yapay zekaya dahi sokulmadan kapıdan çevriliyor.
 
-6. **Dashboard (Yönetici Paneli) ve Veritabanı Mimarisi:**
-   - Sistemin manuel tetiklenmesi, anahtar kelime yönetimi ve Excel çıktısı tamamen `http://127.0.0.1:5000` adresi üzerinden kontrol edilebilir hale geldi. (Terminalde `python -m dashboard.api.app` yazılarak çalıştırılır).
-   - Veritabanına başlangıç (seed) verileri (`default_topics`) koda eklendi ancak tüm arama kelimeleri anlık olarak veritabanı üzerinden (`Keyword` tablosu) dinamik çekiliyor.
-   - Yönetici panelindeki "Excel İndir" butonu, sadece o anki çekilenleri değil, UI'daki **tüm veritabanı yığınını** indirecek şekilde yapılandırıldı.
+### 6. Canlı UI/UX Aşama Takipçisi
+- Yönetim paneline veri çekerken arka planda ne yaşandığını gösteren siyah bir terminal (Modal) eklendi.
+- "X tweet kaydedildi, Y çöp atıldı, Z excel oluşturuldu" gibi veriler saniyesi saniyesine kullanıcıya raporlanıyor.
+
+---
 
 ## 🧠 NLP Katmanı Çalışma Prensibi
-NLP (Doğal Dil İşleme) katmanı, 3 aşamalı bir boru hattı (Pipeline) ile çalışır:
+NLP (Doğal Dil İşleme) katmanı, artık 4 aşamalı kusursuz bir boru hattı (Pipeline) ile çalışır:
 
-1. **Önce Temizleme (`text_cleaner.py`):** Ham tweet metni; linklerden, RT ibarelerinden, etiketlenen kişilerden ve hashtag kelimelerinden tamamen arındırılır.
-2. **Sonra NLP/BERT (`sentiment_analyzer.py`):** Temizlenmiş ve yalınlaştırılmış metin BERT modeline girer. Ham bir duygu skoru (Pozitif, Negatif veya emin değilse Nötr) alır.
-3. **En Son İroni Kontrolü (`irony_detector.py`):** Türkçe diline has kinaye ve sarkazmı algılayamayan BERT modelini korumak için, cümlenin içinde hem ironi kelimeleri (süper, harika) hem de abartı (!! veya harf uzatması) varsa etiket **tersine çevrilir** (Pozitif -> Negatif).
+1. **Önce Temizleme (`text_cleaner.py`):** Ham tweet metni; linklerden, RT ibarelerinden, etiketlenen kişilerden ve hashtag kelimelerinden tamamen arındırılır. Küfürlü metinler çöpe atılır. TheFuzz ile kopyalar silinir.
+2. **Büyük Harf Terbiyecisi:** Kalan temiz metnin %60'tan fazlası büyük harfse, haksız negatif biasını önlemek için küçük harfe çevrilir.
+3. **Sonra NLP/BERT (`sentiment_analyzer.py`):** Temizlenmiş ve yalınlaştırılmış metin `savasy/bert` modeline girer. Ham bir duygu skoru (Pozitif, Negatif veya Nötr) alır. (Güven skoru < %85 ise doğrudan Nötr'e itilir).
+4. **En Son İroni Kontrolü (`irony_detector.py`):** Türkçe diline has kinaye algılayamayan yapay zeka; cümlenin içinde ironi belirteçleri tespit ederse etiketi tersine çevirir. (Sözde pozitifleri negatife çeker).

@@ -6,7 +6,7 @@ import pandas as pd
 import io
 
 from database.db_manager import SessionLocal, Tweet, get_dashboard_stats, get_active_keywords, add_keyword, delete_keyword, init_db
-from api.tweet_fetcher import LocalUsageMonitor
+from api.tweet_fetcher import LocalUsageMonitor, config
 
 app = Flask(__name__, template_folder='../templates', static_folder='../static')
 CORS(app)
@@ -138,10 +138,11 @@ def del_keyword(kw_id):
 def get_usage():
     monitor = LocalUsageMonitor()
     usage = monitor.get_current_month_usage()
+    limit = config.MONTHLY_TWEET_BUDGET
     return jsonify({
         "used": usage,
-        "limit": 10000,
-        "percentage": round((usage / 10000) * 100, 1)
+        "limit": limit,
+        "percentage": round((usage / limit) * 100, 1) if limit > 0 else 0
     })
 
 @app.route('/api/fetch-data', methods=['POST'])
