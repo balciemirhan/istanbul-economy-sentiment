@@ -12,6 +12,8 @@ class Tweet(Base):
     text = Column(String, nullable=False)
     author_username = Column(String)
     created_at = Column(DateTime, default=datetime.datetime.utcnow, index=True)
+    category = Column(String, default='genel', index=True)
+
     
     # NLP Sonuçları
     sentiment = Column(String, index=True) # pozitif, negatif, notr

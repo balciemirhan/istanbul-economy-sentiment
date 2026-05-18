@@ -259,7 +259,7 @@ class TweetFetcher:
 
                             if self.filter.is_valid_tweet(tweet_data):
                                 # Gelen tweet'i sistemin geri kalanının beklediği formata çeviriyoruz (Apify formatına benzetiyoruz)
-                                formatted_tweet = self._parse_item(item, user)
+                                formatted_tweet = self._parse_item(item, user, cat_name)
                                 all_tweets.append(formatted_tweet)
                                 
                         meta = response.get("meta", {})
@@ -288,7 +288,7 @@ class TweetFetcher:
 
         return all_tweets
 
-    def _parse_item(self, item: dict, user: dict) -> dict:
+    def _parse_item(self, item: dict, user: dict, category: str = 'genel') -> dict:
         """Sistemin geri kalanının (SQLite, NLP) anlayacağı standart formata çevirir."""
         public_metrics = item.get('public_metrics', {})
         username = user.get('username', 'unknown')
@@ -301,5 +301,6 @@ class TweetFetcher:
             "likes": public_metrics.get('like_count', 0),
             "retweets": public_metrics.get('retweet_count', 0),
             "views": public_metrics.get('impression_count', 0),
-            "created_at": item.get('created_at')
+            "created_at": item.get('created_at'),
+            "category": category
         }

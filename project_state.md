@@ -28,6 +28,20 @@ Bu dosya, projede gerçekleştirilen **en son değişiklikleri, güncellemeleri 
 - Yönetim paneline veri çekerken arka planda ne yaşandığını gösteren siyah bir terminal (Modal) eklendi.
 - "X tweet kaydedildi, Y çöp atıldı, Z excel oluşturuldu" gibi veriler saniyesi saniyesine kullanıcıya raporlanıyor.
 
+### 7. Dinamik Kategori (Konu) Filtreleme UI
+- Dashboard anasayfasına duygu durumu (sentiment) filtrelerine ek olarak, veritabanından dinamik beslenen **"Kategoriler (Konular)"** filtreleri eklendi.
+- API'den çekilen tüm aktif konular (Örn: Makro Ekonomi, Ulaşım, Gayrimenkul) ikonlarıyla birlikte tek tıklamayla tweetleri filtreleyecek şekilde sisteme entegre edildi. Herhangi bir yeni kategori eklendiğinde arayüz otomatik olarak güncellenir.
+
+### 8. Sentetik Uzman (Synthetic Expert) NLP Mimarisi & UI Modernizasyonu
+- **Gereksiz Modül Temizliği:** Ekranda yer kaplayan ve analitik değeri düşük olan "Viral Tweetler Slider" arayüzü, CSS/JS katmanlarıyla ve arka plandaki `/api/viral-tweets` endpoint'iyle birlikte sistemden tamamen temizlendi. UI, 3'lü grid düzeniyle (0.8fr 1.2fr 1.5fr) daha ferah ve okunabilir bir hale getirildi (Haftalık trend grafiğine daha çok alan açıldı).
+- **Lokal Semantik (N-Gram) Motoru:** Pahalı ve yavaş harici LLM'lere (ChatGPT vb.) bağlanmak yerine, kendi sunucumuzda çalışan **Bigram/Unigram (Kök Neden Çıkarımı)** Python algoritması yazıldı. Sistem, anlık filtrelenmiş tweetlerin metinlerini temizleyip en çok yan yana gelen 2'li (veya tekli) kelimeleri sayarak "Ana Katalizörleri" tespit ediyor.
+- **Kombinasyonlu Zeka Sentezi:** Dashboard'un ortasındaki AI İçgörü Kartı, metrikleri ayrı ayrı saymak yerine sentezlemeye başladı. Negatiflik ve Etkileşim aynı anda yüksekse sistem "Kriz Atmosferi (Yüksek Risk)", düşükse "İzole Şikayetler" tespitinde bulunuyor. Etkileşim hesabı, sahte görüntülenmeleri (Views) saymayarak sadece gerçek reaksiyonları (Like+RT) baz alıyor.
+- **Executive (Yönetici) Jargonu:** Tüm NLP sonuçları (Duygu, İroni, Semantik) basit okumalar yerine McKinsey danışmanı edasında; "Kök Neden", "Ana Katalizörler", "Toplumsal Tepki Profili" gibi profesyonel kurumsal metinlerle raporlanıyor.
+
+### 9. Özel "İstanbul Trafik" ve "Sıfır Tolerans" Kuralı Seti
+- **Sıfır Tolerans Argo Filtresi:** `text_cleaner.py` içindeki küfür filtresi Negatif İleri Bakış (Negative Lookahead) kullanılarak `r'\bsik(?!inti|let)\w*'` mantığına güncellendi. "Sıkıntı", "Bisiklet" gibi masum kelimeler korunurken, ek almış tüm ağır küfürler (örn: "...sikeyim") veritabanından kalıcı olarak (Retroaktif temizlikle) silindi.
+- **Trafik Override:** BERT modelinin "Artık denizde bile trafik var :)" gibi ironik tweetlerdeki gülücüklere kanıp sahte pozitif (False Positive) üretmesi engellendi. Cümlede "trafik" kelimesi varsa ve ("açık, yok, rahat") gibi kelimeler geçmiyorsa, sistem artık modeli zorla (override) Negatife çekerek İstanbul'un trafik çilesini doğru indeksliyor.
+
 ---
 
 ## 🧠 NLP Katmanı Çalışma Prensibi

@@ -160,9 +160,9 @@
   /* Charts Grid */
   .charts-grid {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: 0.8fr 1.2fr 1.5fr;
     gap: 16px;
-    margin-bottom: 32px;
+    margin-bottom: 24px;
   }
 
   .chart-card {
@@ -342,6 +342,215 @@
     .stat-card .value { font-size: 28px; }
     .method-bar { flex-direction: column; align-items: flex-start; }
   }
+
+  /* AI Insights UI */
+  .ai-insights-container {
+    background: linear-gradient(145deg, rgba(30, 41, 59, 0.4), rgba(15, 23, 42, 0.4));
+    border: 1px solid rgba(99, 102, 241, 0.2);
+    border-radius: 16px;
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    box-shadow: inset 0 0 20px rgba(99, 102, 241, 0.02);
+  }
+  .ai-insights-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+    padding-bottom: 12px;
+    margin-bottom: 4px;
+  }
+  .ai-insights-header .ai-icon {
+    background: rgba(99, 102, 241, 0.15);
+    color: #818cf8;
+    padding: 6px;
+    border-radius: 8px;
+    font-size: 16px;
+  }
+  .ai-insight-item {
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+    font-size: 13px;
+    line-height: 1.5;
+    color: var(--text-dim);
+    background: rgba(255,255,255,0.02);
+    padding: 14px;
+    border-radius: 12px;
+    border: 1px solid rgba(255,255,255,0.03);
+    transition: 0.3s;
+  }
+  .ai-insight-item:hover {
+    background: rgba(99, 102, 241, 0.05);
+    border-color: rgba(99, 102, 241, 0.1);
+    color: var(--text);
+  }
+  .ai-insight-icon {
+    font-size: 18px;
+    flex-shrink: 0;
+  }
+  .ai-insight-text b {
+    color: var(--text);
+    font-weight: 600;
+  }
+
+
+  /* Premium Topic Filter UI */
+  .topic-filter-btn {
+    background: rgba(99, 102, 241, 0.05);
+    border: 1px solid rgba(99, 102, 241, 0.2);
+    color: var(--text);
+    padding: 10px 20px;
+    border-radius: 100px;
+    font-family: 'Outfit', sans-serif;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    transition: all 0.3s ease;
+  }
+  .topic-filter-btn:hover {
+    background: rgba(99, 102, 241, 0.15);
+    border-color: rgba(99, 102, 241, 0.4);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(99, 102, 241, 0.15);
+  }
+  .topic-filter-btn .chevron {
+    font-size: 10px;
+    color: var(--text-dim);
+    transition: transform 0.3s;
+  }
+
+  .topic-modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(10, 14, 23, 0.8);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    z-index: 2000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  .topic-modal-overlay.active {
+    opacity: 1;
+    visibility: visible;
+  }
+  
+  .topic-modal-content {
+    background: var(--card);
+    border: 1px solid var(--card-border);
+    border-radius: 24px;
+    width: 90%;
+    max-width: 650px;
+    padding: 32px;
+    transform: scale(0.95) translateY(20px);
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+    position: relative;
+    overflow: hidden;
+  }
+  .topic-modal-overlay.active .topic-modal-content {
+    transform: scale(1) translateY(0);
+  }
+  
+  .topic-modal-content::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: radial-gradient(circle at 50% 0%, rgba(99, 102, 241, 0.1) 0%, transparent 50%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .topic-modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 24px;
+    position: relative;
+    z-index: 1;
+  }
+  .topic-modal-title {
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--text);
+  }
+  .topic-modal-close {
+    background: transparent;
+    border: none;
+    color: var(--text-dim);
+    font-size: 24px;
+    cursor: pointer;
+    transition: color 0.2s;
+  }
+  .topic-modal-close:hover { color: var(--text); }
+
+  .topic-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 16px;
+    position: relative;
+    z-index: 1;
+  }
+
+  .topic-card {
+    background: rgba(30, 41, 59, 0.4);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 16px;
+    padding: 20px;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    text-align: center;
+  }
+  .topic-card:hover {
+    background: rgba(99, 102, 241, 0.1);
+    border-color: var(--accent);
+    transform: translateY(-4px);
+    box-shadow: 0 10px 25px rgba(99, 102, 241, 0.2);
+  }
+  .topic-card.active {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: white;
+  }
+  .topic-card.active .topic-icon { background: rgba(255, 255, 255, 0.2); }
+  
+  .topic-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.05);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    transition: all 0.3s ease;
+  }
+  .topic-name {
+    font-size: 14px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+  }
 </style>
 </head>
 <body>
@@ -383,12 +592,22 @@
     </div>
   </div>
 
-  <!-- Charts -->
+  <!-- Charts Grid (Pie + AI Insights + Line) -->
   <div class="charts-grid">
     <div class="chart-card">
       <h3><span class="icon" style="background:var(--accent-glow);">📊</span> Duygu Dağılımı</h3>
       <canvas id="pieChart"></canvas>
     </div>
+    
+    <div class="ai-insights-container" id="aiInsightsContainer">
+      <div class="ai-insights-header">
+        <span class="ai-icon">💡</span> NLP & Sistem İçgörüleri
+      </div>
+      <div id="aiInsightsList" style="display: flex; flex-direction: column; gap: 12px;">
+        <div style="font-size: 12px; color: var(--text-dim); text-align: center; padding-top: 30px;">İçgörüler hesaplanıyor...</div>
+      </div>
+    </div>
+    
     <div class="chart-card">
       <h3><span class="icon" style="background:var(--accent-glow);">📈</span> Haftalık Trend</h3>
       <canvas id="lineChart"></canvas>
@@ -398,11 +617,24 @@
   <!-- Tweet Feed -->
   <div class="feed-section">
     <h3>💬 Örnek Tweetler</h3>
-    <div class="feed-tabs">
-      <button class="feed-tab active" onclick="filterTweets('hepsi')">Hepsi</button>
-      <button class="feed-tab" onclick="filterTweets('pozitif')">🟢 Pozitif</button>
-      <button class="feed-tab" onclick="filterTweets('negatif')">🔴 Negatif</button>
-      <button class="feed-tab" onclick="filterTweets('notr')">🟡 Nötr</button>
+    <div style="display: flex; justify-content: space-between; align-items: flex-end; flex-wrap: wrap; gap: 16px; margin-bottom: 24px;">
+      <div>
+        <div style="font-size: 11px; font-weight: 600; color: var(--text-dim); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px;">Duygu Durumu</div>
+        <div class="feed-tabs" id="sentimentTabs" style="margin-bottom: 0;">
+          <button class="feed-tab active" onclick="setSentimentFilter('hepsi')">Hepsi</button>
+          <button class="feed-tab" onclick="setSentimentFilter('pozitif')">🟢 Pozitif</button>
+          <button class="feed-tab" onclick="setSentimentFilter('negatif')">🔴 Negatif</button>
+          <button class="feed-tab" onclick="setSentimentFilter('notr')">🟡 Nötr</button>
+        </div>
+      </div>
+      <div>
+        <div style="font-size: 11px; font-weight: 600; color: var(--text-dim); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; text-align: right;">Kategori Filtresi</div>
+        <button class="topic-filter-btn" onclick="openTopicModal()" id="topicFilterBtn">
+          <span class="icon">🌍</span>
+          <span class="text">Tüm Konular</span>
+          <span class="chevron">▼</span>
+        </button>
+      </div>
     </div>
     <div class="tweet-list" id="tweetList"></div>
   </div>
@@ -421,7 +653,8 @@ let pieChartInstance = null;
 let lineChartInstance = null; 
 
 let currentPage = 1;
-let currentFilter = 'hepsi';
+let currentSentiment = 'hepsi';
+let currentTopic = 'hepsi';
 let isLoading = false;
 let hasMore = true;
 
@@ -448,7 +681,7 @@ async function loadMoreTweets() {
   list.insertAdjacentHTML('beforeend', loadingHtml);
 
   try {
-    const res = await fetch(`/api/tweets?page=${currentPage}&limit=50&sentiment=${currentFilter}`);
+    const res = await fetch(`/api/tweets?page=${currentPage}&limit=50&sentiment=${currentSentiment}&topic=${currentTopic}`);
     const data = await res.json();
     
     document.getElementById('loadingIndicator')?.remove();
@@ -548,22 +781,108 @@ function updateDashboard(stats) {
   }
 }
 
-function filterTweets(filter) {
-  document.querySelectorAll('.feed-tab').forEach(t => t.classList.remove('active'));
+function setSentimentFilter(filter) {
+  document.querySelectorAll('#sentimentTabs .feed-tab').forEach(t => t.classList.remove('active'));
   event.target.classList.add('active');
+  currentSentiment = filter;
+  resetAndLoadTweets();
+}
+
+function openTopicModal() {
+  document.getElementById('topicModal').classList.add('active');
+}
+
+function closeTopicModal(event) {
+  if (event && event.target !== document.getElementById('topicModal')) return;
+  document.getElementById('topicModal').classList.remove('active');
+}
+
+function setTopicFilter(filter, displayName, icon) {
+  currentTopic = filter;
+  document.getElementById('topicFilterBtn').querySelector('.text').innerText = displayName;
+  document.getElementById('topicFilterBtn').querySelector('.icon').innerText = icon;
   
+  document.querySelectorAll('.topic-card').forEach(t => t.classList.remove('active'));
+  const activeCard = document.querySelector(`.topic-card[data-cat="${filter}"]`);
+  if(activeCard) activeCard.classList.add('active');
+  
+  closeTopicModal();
+  resetAndLoadTweets();
+}
+
+function resetAndLoadTweets() {
   const list = document.getElementById('tweetList');
-  list.style.opacity = '0.3'; // Geçiş esnasında listeyi soluklaştır
+  if(list) list.style.opacity = '0.3';
   
-  // Filtre değiştiğinde her şeyi sıfırla ve API'den taze 1. sayfayı iste
-  currentFilter = filter;
   currentPage = 1;
   hasMore = true;
   
-  // Veri yüklendikten sonra opaklığı geri getir
   loadMoreTweets().then(() => {
-    list.style.opacity = '1';
+    if(list) list.style.opacity = '1';
   });
+  loadAIInsights();
+}
+
+
+async function loadAIInsights() {
+  try {
+    const list = document.getElementById('aiInsightsList');
+    list.innerHTML = '<div style="font-size: 12px; color: var(--text-dim); text-align: center; padding-top: 30px;">İçgörüler hesaplanıyor...</div>';
+    
+    const res = await fetch(`/api/ai-insights?sentiment=${currentSentiment}&topic=${currentTopic}`);
+    const insights = await res.json();
+    
+    let html = '';
+    insights.forEach(item => {
+      html += `
+        <div class="ai-insight-item">
+          <div class="ai-insight-icon">${item.icon}</div>
+          <div class="ai-insight-text">${item.text}</div>
+        </div>
+      `;
+    });
+    
+    list.innerHTML = html;
+  } catch(e) {
+    console.error("AI Insights hatası", e);
+  }
+}
+
+async function loadTopics() {
+  try {
+    const res = await fetch('/api/keywords');
+    const keywords = await res.json();
+    const uniqueCats = [...new Set(keywords.map(k => k.category))];
+    
+    const container = document.getElementById('topicGrid');
+    let html = `
+      <div class="topic-card active" data-cat="hepsi" onclick="setTopicFilter('hepsi', 'Tüm Konular', '🌍')">
+        <div class="topic-icon">🌍</div>
+        <div class="topic-name">Tüm Konular</div>
+      </div>
+    `;
+    
+    const icons = {
+      'makro_ekonomi': '📊',
+      'ulasim_lojistik': '🚌',
+      'gayrimenkul_insaat': '🏢',
+      'ticaret_perakende': '🛒',
+      'genel': '📌'
+    };
+
+    uniqueCats.forEach(cat => {
+      const displayCat = cat.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+      const icon = icons[cat] || '🏷️';
+      html += `
+        <div class="topic-card" data-cat="${cat}" onclick="setTopicFilter('${cat}', '${displayCat}', '${icon}')">
+          <div class="topic-icon">${icon}</div>
+          <div class="topic-name">${displayCat}</div>
+        </div>
+      `;
+    });
+    
+    container.innerHTML = html;
+  } catch(e) { console.error(e); }
 }
 
 // Scroll to Top Listener
@@ -587,6 +906,8 @@ const observer = new IntersectionObserver((entries) => {
 
 document.addEventListener('DOMContentLoaded', () => {
   fetchStats();
+  loadTopics();
+  loadAIInsights();
   
   // Gözlemci için sayfa sonuna gizli div ekle
   const listContainer = document.querySelector('.feed-section');
@@ -598,6 +919,19 @@ document.addEventListener('DOMContentLoaded', () => {
   observer.observe(triggerDiv);
 });
 </script>
+
+<!-- Premium Topic Filter Modal -->
+<div class="topic-modal-overlay" id="topicModal" onclick="closeTopicModal(event)">
+  <div class="topic-modal-content" onclick="event.stopPropagation()">
+    <div class="topic-modal-header">
+      <div class="topic-modal-title">İlgilendiğiniz Konuyu Seçin</div>
+      <button class="topic-modal-close" onclick="closeTopicModal()">×</button>
+    </div>
+    <div class="topic-grid" id="topicGrid">
+      <!-- JS ile dinamik doldurulacak -->
+    </div>
+  </div>
+</div>
 
 <!-- Yukarı Çık Butonu -->
 <div class="scroll-to-top" id="scrollToTop" onclick="window.scrollTo({top: 0, behavior: 'smooth'})">

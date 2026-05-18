@@ -17,6 +17,22 @@ SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 def init_db():
     """Veritabanı tablolarını oluşturur."""
     Base.metadata.create_all(bind=engine)
+    
+    # Kategori sütunu migration (geçiş)
+    db = SessionLocal()
+    try:
+        from sqlalchemy import text
+        res = db.execute(text("PRAGMA table_info(tweets);")).fetchall()
+        columns = [row[1] for row in res]
+        if "category" not in columns:
+            db.execute(text("ALTER TABLE tweets ADD COLUMN category VARCHAR DEFAULT 'genel';"))
+            db.commit()
+    except Exception as e:
+        db.rollback()
+        logger.error(f"Migration hatası: {e}")
+    finally:
+        db.close()
+        
     seed_keywords_if_empty()
 
 def save_tweet(tweet_data):
@@ -36,7 +52,8 @@ def save_tweet(tweet_data):
                 likes=tweet_data.get('likes', 0),
                 retweets=tweet_data.get('retweets', 0),
                 views=tweet_data.get('views', 0),
-                hashtags=tweet_data.get('hashtags', '')
+                hashtags=tweet_data.get('hashtags', ''),
+                category=tweet_data.get('category', 'genel')
             )
             db.add(new_tweet)
             db.commit()
@@ -79,7 +96,8 @@ def save_tweets_bulk(tweets_list):
                     likes=tweet_data.get('likes', 0),
                     retweets=tweet_data.get('retweets', 0),
                     views=tweet_data.get('views', 0),
-                    hashtags=tweet_data.get('hashtags', '')
+                    hashtags=tweet_data.get('hashtags', ''),
+                    category=tweet_data.get('category', 'genel')
                 )
                 objects_to_save.append(new_tweet)
                 existing_ids.add(t_id) # Aynı listede kopya varsa engellemek için

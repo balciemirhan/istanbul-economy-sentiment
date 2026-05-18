@@ -73,13 +73,24 @@ class SentimentAnalyzer:
         # "Zam" veya "asgari ücret" tek başına negatif değildir (Örn: "Asgari ücrete zam geldi çok sevindik").
         # Ancak içinde eylem/protesto kelimeleri geçiyorsa negatiftir.
         
-        pure_negative_keywords = ["protesto", "eylem", "yürüyoruz", "yoksulluk", "açlık", "geçinemiyoruz", "pahalılık", "istifa", "isyan"]
+        pure_negative_keywords = ["protesto", "eylem", "yürüyoruz", "yoksulluk", "açlık", "geçinemiyoruz", "pahalılık", "istifa", "isyan", "arızası", "rötar", "kaza yaptı", "kilitlendi", "çilesi"]
         raw_lower = raw_text.lower()
         
         if final_sentiment == "pozitif":
-            # Eğer saf isyan kelimelerinden biri geçiyorsa direkt negatif yap
+            # Eğer saf isyan/arıza kelimelerinden biri geçiyorsa direkt negatif yap
             if any(kw in raw_lower for kw in pure_negative_keywords):
                 final_sentiment = "negatif"
+                
+            # İSTANBUL TRAFİK OVERRIDE (Özel Kural)
+            # Eğer içinde 'trafik' kelimesi geçiyorsa ve cümlede 'yok', 'açık', 'rahat' gibi rahatlama belirtisi yoksa, o tweet kesinlikle şikayettir!
+            # Ayrıca gülücük :) konulsa bile bu ironik bir acı çekmedir.
+            elif "trafik" in raw_lower:
+                if not any(good_word in raw_lower for good_word in ["yok", "açık", "rahat", "boş", "akıyor"]):
+                    final_sentiment = "negatif"
+                    
+            # Sadece liste veya nötr kavramlar (örn: mazot tankeri, kanal istanbul) geçiyorsa ve eylem yoksa pozitifi nötre çek
+            elif any(kw in raw_lower for kw in ["tanker", "konteynır", "fıçısı"]) and "kanal istanbul" in raw_lower:
+                final_sentiment = "notr"
         
         return {
             "sentiment": final_sentiment,

@@ -40,11 +40,11 @@ def contains_profanity(text):
     # Twitter Türkiye'de en çok kullanılan kaba ve küfürlü kelimeler
     # \b kelime sınırlarını belirler ki 'sıkıntı' kelimesindeki 'sık' kısmı yanlışlıkla küfür algılanmasın.
     profanity_patterns = [
-        r'\bamk\b', r'\bamq\b', r'\baq\b', r'\bmk\b', r'\ba\.q\b', r'\bo\.ç\b', r'\boç\b',
-        r'siktir', r's\*ktir', r's\.ktir', r'\bsikik\b', r'\bsiker\b', r'\bsikey\b', r'\bsik\b', 
-        r'orospu', r'\bpiç\b', r'\bpıc\b', r'\bgavat\b', r'\bibne\b', r'\byavşak\b', r'\byavsak\b',
-        r'\bgöt\b', r'\bgot\b', r'\bamcık\b', r'\bamcik\b', r'şerefsiz', r'serefsiz', 
-        r'pezevenk', r'kahpe', r'fahişe'
+        r'\bamk\w*', r'\bamq\w*', r'\baq\w*', r'\bmk\w*', r'\bo\.ç\w*', r'\boç\w*',
+        r'\bsik(?!inti|let)\w*', r's\*k\w*', r's\.k\w*', 
+        r'\borospu\w*', r'\bpiç\w*', r'\bpıc\w*', r'\bgavat\w*', r'\bibne\w*', r'\byavşak\w*', r'\byavsak\w*',
+        r'\bgöt\w*', r'\bamcık\w*', r'\bamcik\w*', r'\bşerefsiz\w*', r'\bserefsiz\w*', 
+        r'\bpezevenk\w*', r'\bkahpe\w*', r'\bfahişe\w*'
     ]
     
     for pattern in profanity_patterns:
