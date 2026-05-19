@@ -5,7 +5,11 @@ import threading
 import pandas as pd
 import io
 
-from database.db_manager import SessionLocal, Tweet, Keyword, get_dashboard_stats, get_active_keywords, add_keyword, delete_keyword, init_db
+from database.db_manager import (
+    SessionLocal, Tweet, Keyword,
+    get_dashboard_stats, get_weekly_trend, get_active_keywords,
+    add_keyword, delete_keyword, init_db,
+)
 from api.tweet_fetcher import LocalUsageMonitor, config
 from sqlalchemy import or_
 
@@ -67,6 +71,16 @@ def stats():
     try:
         stats_data = get_dashboard_stats()
         return jsonify(stats_data)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/api/weekly-trend')
+def weekly_trend():
+    try:
+        sentiment = request.args.get('sentiment', 'hepsi')
+        topic = request.args.get('topic', 'hepsi')
+        data = get_weekly_trend(sentiment=sentiment, topic=topic)
+        return jsonify(data)
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 

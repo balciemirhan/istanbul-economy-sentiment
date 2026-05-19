@@ -1,29 +1,21 @@
 # X API
 requests
-tweepy
 
 # NLP
 transformers
 torch
-scipy
 
 # Database
-psycopg2-binary
 sqlalchemy
-alembic
-
-# Scheduler
-apscheduler
 
 # Dashboard API
 flask
 flask-cors
 
-# PDF
-fpdf2
-
 # Utils
 python-dotenv
+python-dateutil
 pandas
+openpyxl
 thefuzz
 python-Levenshtein

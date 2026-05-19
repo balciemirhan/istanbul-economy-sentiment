@@ -132,6 +132,70 @@ def get_dashboard_stats():
     finally:
         db.close()
 
+
+_MONTHS_TR = (
+    "Oca", "Şub", "Mar", "Nis", "May", "Haz",
+    "Tem", "Ağu", "Eyl", "Eki", "Kas", "Ara",
+)
+
+
+def _format_tr_short_date(dt):
+    return f"{dt.day} {_MONTHS_TR[dt.month - 1]}"
+
+
+def get_weekly_trend(days=28, weeks=4, sentiment=None, topic=None):
+    """
+    Son `days` günü `weeks` eşit dilime böler; her dilimde duygu sayılarını döner.
+    Tweet.created_at = X yayın tarihi (DB kayıt anı değil).
+    """
+    now = datetime.datetime.utcnow()
+    window_start = now - datetime.timedelta(days=days)
+    week_duration = days // weeks
+
+    db = SessionLocal()
+    try:
+        result_weeks = []
+        for i in range(weeks):
+            bucket_start = window_start + datetime.timedelta(days=i * week_duration)
+            bucket_end = (
+                now
+                if i == weeks - 1
+                else window_start + datetime.timedelta(days=(i + 1) * week_duration)
+            )
+
+            query = db.query(Tweet).filter(
+                Tweet.created_at >= bucket_start,
+                Tweet.created_at < bucket_end,
+            )
+            if sentiment and sentiment != "hepsi":
+                query = query.filter(Tweet.sentiment == sentiment)
+            if topic and topic != "hepsi":
+                query = query.filter(Tweet.category == topic)
+
+            positive = query.filter(Tweet.sentiment == "pozitif").count()
+            negative = query.filter(Tweet.sentiment == "negatif").count()
+            neutral = query.filter(Tweet.sentiment == "notr").count()
+            total = positive + negative + neutral
+
+            label_end = bucket_end - datetime.timedelta(days=1)
+            if label_end < bucket_start:
+                label_end = bucket_start
+
+            result_weeks.append({
+                "label": f"{_format_tr_short_date(bucket_start)} – {_format_tr_short_date(label_end)}",
+                "start": bucket_start.strftime("%Y-%m-%d"),
+                "end": label_end.strftime("%Y-%m-%d"),
+                "positive": positive,
+                "negative": negative,
+                "neutral": neutral,
+                "total": total,
+            })
+
+        return {"period_days": days, "weeks": result_weeks}
+    finally:
+        db.close()
+
+
 def seed_keywords_if_empty():
     """Tablo boşsa yeni varsayılan kelimeleri ekler. Dinamik eklenenleri silmez."""
     db = SessionLocal()

@@ -194,6 +194,197 @@
 
   canvas { max-height: 280px; }
 
+  /* Weekly Trend */
+  .trend-chart-card {
+    display: flex;
+    flex-direction: column;
+    min-height: 320px;
+  }
+
+  .trend-chart-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 12px;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+  }
+
+  .trend-chart-header .title-block h3 {
+    margin-bottom: 4px;
+  }
+
+  .trend-chart-subtitle {
+    font-size: 12px;
+    color: var(--text-dim);
+    font-weight: 400;
+    line-height: 1.4;
+  }
+
+  .trend-view-toggle {
+    display: flex;
+    background: rgba(15, 23, 42, 0.6);
+    border: 1px solid var(--card-border);
+    border-radius: 10px;
+    padding: 3px;
+    gap: 2px;
+  }
+
+  .trend-view-btn {
+    border: none;
+    background: transparent;
+    color: var(--text-dim);
+    font-family: 'Outfit', sans-serif;
+    font-size: 12px;
+    font-weight: 500;
+    padding: 6px 12px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: 0.2s;
+  }
+
+  .trend-view-btn.active {
+    background: var(--accent-glow);
+    color: #c7d2fe;
+    border: 1px solid rgba(99, 102, 241, 0.25);
+  }
+
+  .trend-view-btn:hover:not(.active) {
+    color: var(--text);
+  }
+
+  .trend-week-pills {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+    margin-bottom: 16px;
+  }
+
+  .trend-week-pill {
+    background: rgba(15, 23, 42, 0.5);
+    border: 1px solid var(--card-border);
+    border-radius: 10px;
+    padding: 10px 8px;
+    text-align: center;
+    transition: border-color 0.2s, transform 0.15s;
+    cursor: default;
+  }
+
+  .trend-week-pill.has-data {
+    cursor: pointer;
+  }
+
+  .trend-week-pill.has-data:hover {
+    border-color: rgba(99, 102, 241, 0.4);
+    transform: translateY(-1px);
+  }
+
+  .trend-week-pill.active-week {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 1px rgba(99, 102, 241, 0.2);
+  }
+
+  .trend-week-pill .pill-label {
+    font-size: 10px;
+    color: var(--text-dim);
+    margin-bottom: 4px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .trend-week-pill .pill-total {
+    font-size: 18px;
+    font-weight: 700;
+    font-family: 'JetBrains Mono', monospace;
+    color: var(--text);
+  }
+
+  .trend-week-pill .pill-mood {
+    font-size: 10px;
+    margin-top: 4px;
+    font-weight: 500;
+  }
+
+  .trend-week-pill.mood-pos .pill-mood { color: var(--positive); }
+  .trend-week-pill.mood-neg .pill-mood { color: var(--negative); }
+  .trend-week-pill.mood-neu .pill-mood { color: var(--neutral); }
+  .trend-week-pill.mood-empty .pill-mood { color: var(--text-dim); }
+
+  .trend-chart-wrap {
+    position: relative;
+    flex: 1;
+    min-height: 220px;
+  }
+
+  .trend-chart-wrap canvas {
+    max-height: 240px;
+  }
+
+  .trend-empty,
+  .trend-loading {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 24px;
+    border-radius: 12px;
+    background: rgba(15, 23, 42, 0.35);
+    border: 1px dashed var(--card-border);
+  }
+
+  .trend-loading { display: none; }
+  .trend-empty { display: none; }
+
+  .trend-empty.visible,
+  .trend-loading.visible {
+    display: flex;
+  }
+
+  .trend-empty-icon {
+    font-size: 28px;
+    margin-bottom: 8px;
+    opacity: 0.7;
+  }
+
+  .trend-empty p {
+    font-size: 13px;
+    color: var(--text-dim);
+    max-width: 220px;
+    line-height: 1.5;
+  }
+
+  .trend-summary-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px solid var(--card-border);
+    font-size: 11px;
+    color: var(--text-dim);
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .trend-summary-bar strong {
+    color: var(--text);
+    font-weight: 600;
+  }
+
+  @media (max-width: 900px) {
+    .trend-week-pills {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+
   /* Tweet Feed */
   .feed-section {
     background: var(--card);
@@ -608,9 +799,32 @@
       </div>
     </div>
     
-    <div class="chart-card">
-      <h3><span class="icon" style="background:var(--accent-glow);">📈</span> Haftalık Trend</h3>
-      <canvas id="lineChart"></canvas>
+    <div class="chart-card trend-chart-card" id="trendChartCard">
+      <div class="trend-chart-header">
+        <div class="title-block">
+          <h3><span class="icon" style="background:var(--accent-glow);">📈</span> Haftalık Trend</h3>
+          <p class="trend-chart-subtitle">Son 28 gün · Tweet yayın tarihine göre (X)</p>
+        </div>
+        <div class="trend-view-toggle" role="tablist" aria-label="Grafik görünümü">
+          <button type="button" class="trend-view-btn active" data-view="line" onclick="setTrendView('line')">Çizgi</button>
+          <button type="button" class="trend-view-btn" data-view="stacked" onclick="setTrendView('stacked')">Yığın</button>
+        </div>
+      </div>
+      <div class="trend-week-pills" id="trendWeekPills"></div>
+      <div class="trend-chart-wrap">
+        <canvas id="lineChart" aria-label="Haftalık duygu trend grafiği"></canvas>
+        <div class="trend-loading" id="trendLoading">
+          <div style="width:32px;height:32px;border:3px solid var(--card-border);border-top-color:var(--accent);border-radius:50%;animation:spin 0.8s linear infinite;"></div>
+        </div>
+        <div class="trend-empty" id="trendEmpty">
+          <div class="trend-empty-icon">📭</div>
+          <p>Bu dönemde henüz tweet yok. Admin panelinden veri çektiğinizde haftalık dağılım burada görünür.</p>
+        </div>
+      </div>
+      <div class="trend-summary-bar" id="trendSummaryBar">
+        <span>28 günlük toplam: <strong id="trendPeriodTotal">0</strong> tweet</span>
+        <span id="trendMomentumText">—</span>
+      </div>
     </div>
   </div>
 
@@ -643,14 +857,16 @@
   <div class="method-bar">
     <div class="method-item">Model: <span>BERT (Turkish fine-tuned)</span></div>
     <div class="method-item">Kaynak: <span>Twitter/X API</span></div>
-    <div class="method-item">Dönem: <span>Son 7 gün</span></div>
+    <div class="method-item">Dönem: <span>Son 4 hafta (28 gün)</span></div>
     <div class="method-item">Güven: <span id="stat-confidence">Ort. -</span></div>
   </div>
 </div>
 
 <script>
 let pieChartInstance = null;
-let lineChartInstance = null; 
+let lineChartInstance = null;
+let trendChartView = 'line';
+let lastTrendWeeks = [];
 
 let currentPage = 1;
 let currentSentiment = 'hepsi';
@@ -757,28 +973,226 @@ function updateDashboard(stats) {
     }
   });
 
-  // Line Chart (Şimdilik Demo, ileride zamana göre gruplanacak)
-  const lineCtx = document.getElementById('lineChart').getContext('2d');
-  if(!lineChartInstance) {
-      lineChartInstance = new Chart(lineCtx, {
-        type: 'line',
-        data: {
-          labels: ['Hafta 1', 'Hafta 2', 'Hafta 3', 'Hafta 4'],
-          datasets: [
-            { label: 'Pozitif', data: [0, 0, 0, stats.positive.count], borderColor: '#10b981', backgroundColor: 'rgba(16,185,129,0.1)', fill: true, tension: 0.4 },
-            { label: 'Negatif', data: [0, 0, 0, stats.negative.count], borderColor: '#ef4444', backgroundColor: 'rgba(239,68,68,0.1)', fill: true, tension: 0.4 },
-            { label: 'Nötr', data: [0, 0, 0, stats.neutral.count], borderColor: '#f59e0b', backgroundColor: 'rgba(245,158,11,0.1)', fill: true, tension: 0.4 }
-          ]
-        },
-        options: {
-            responsive: true,
-            scales: {
-              x: { grid: { color: 'rgba(148,163,184,0.08)' }, ticks: { color: '#64748b' } },
-              y: { grid: { color: 'rgba(148,163,184,0.08)' }, ticks: { color: '#64748b' } }
-            }
-        }
-      });
+}
+
+const TREND_CHART_COLORS = {
+  pozitif: { border: '#10b981', fill: 'rgba(16,185,129,0.15)' },
+  negatif: { border: '#ef4444', fill: 'rgba(239,68,68,0.15)' },
+  notr: { border: '#f59e0b', fill: 'rgba(245,158,11,0.15)' },
+};
+
+function setTrendLoading(visible) {
+  const el = document.getElementById('trendLoading');
+  const canvas = document.getElementById('lineChart');
+  if (el) el.classList.toggle('visible', visible);
+  if (canvas) canvas.style.opacity = visible ? '0.25' : '1';
+}
+
+function getWeekDominant(w) {
+  const total = (w.positive || 0) + (w.negative || 0) + (w.neutral || 0);
+  if (total === 0) return { key: 'empty', label: 'Veri yok', pct: 0 };
+  const entries = [
+    { key: 'pos', label: 'Pozitif', count: w.positive || 0 },
+    { key: 'neg', label: 'Negatif', count: w.negative || 0 },
+    { key: 'neu', label: 'Nötr', count: w.neutral || 0 },
+  ];
+  entries.sort((a, b) => b.count - a.count);
+  return { key: entries[0].key, label: entries[0].label, pct: Math.round((entries[0].count / total) * 100) };
+}
+
+function renderTrendWeekPills(weeks) {
+  const container = document.getElementById('trendWeekPills');
+  if (!container) return;
+  container.innerHTML = weeks.map((w, i) => {
+    const dom = getWeekDominant(w);
+    const moodClass = dom.key === 'pos' ? 'mood-pos' : dom.key === 'neg' ? 'mood-neg' : dom.key === 'neu' ? 'mood-neu' : 'mood-empty';
+    const hasData = (w.total || 0) > 0;
+    const shortLabel = `H${i + 1}`;
+    return `
+      <div class="trend-week-pill ${moodClass}${hasData ? ' has-data' : ''}" title="${w.label}" data-week-index="${i}">
+        <div class="pill-label" title="${w.label}">${shortLabel}</div>
+        <div class="pill-total">${w.total || 0}</div>
+        <div class="pill-mood">${hasData ? dom.label + ' %' + dom.pct : '—'}</div>
+      </div>
+    `;
+  }).join('');
+}
+
+function updateTrendSummary(weeks) {
+  const periodTotal = weeks.reduce((s, w) => s + (w.total || 0), 0);
+  const totalEl = document.getElementById('trendPeriodTotal');
+  const momentumEl = document.getElementById('trendMomentumText');
+  const emptyEl = document.getElementById('trendEmpty');
+  const canvas = document.getElementById('lineChart');
+
+  if (totalEl) totalEl.textContent = periodTotal;
+  if (emptyEl) emptyEl.classList.toggle('visible', periodTotal === 0);
+  if (canvas) canvas.style.visibility = periodTotal === 0 ? 'hidden' : 'visible';
+
+  if (momentumEl && weeks.length >= 2) {
+    const last = weeks[weeks.length - 1];
+    const prev = weeks[weeks.length - 2];
+    const lastNeg = last.total ? Math.round(((last.negative || 0) / last.total) * 100) : 0;
+    const prevNeg = prev.total ? Math.round(((prev.negative || 0) / prev.total) * 100) : 0;
+    const delta = lastNeg - prevNeg;
+    if (last.total === 0 && prev.total === 0) {
+      momentumEl.textContent = 'Son hafta: veri bekleniyor';
+    } else if (delta > 0) {
+      momentumEl.innerHTML = `Son hafta negatiflik: <strong>+%${delta}</strong> (önceki haftaya göre)`;
+      momentumEl.style.color = 'var(--negative)';
+    } else if (delta < 0) {
+      momentumEl.innerHTML = `Son hafta negatiflik: <strong>${delta}%</strong> (iyileşme)`;
+      momentumEl.style.color = 'var(--positive)';
+    } else {
+      momentumEl.textContent = 'Son iki hafta benzer duygu dağılımı';
+      momentumEl.style.color = 'var(--text-dim)';
+    }
+  } else if (momentumEl) {
+    momentumEl.textContent = '—';
   }
+}
+
+function buildTrendDatasets(weeks, chartType) {
+  const isStacked = chartType === 'stacked';
+  return [
+    {
+      label: 'Pozitif',
+      data: weeks.map(w => w.positive),
+      borderColor: TREND_CHART_COLORS.pozitif.border,
+      backgroundColor: TREND_CHART_COLORS.pozitif.fill,
+      borderWidth: isStacked ? 0 : 2,
+      fill: !isStacked,
+      tension: 0.35,
+      pointRadius: isStacked ? 0 : 4,
+      pointHoverRadius: 6,
+      stack: isStacked ? 'week' : undefined,
+    },
+    {
+      label: 'Negatif',
+      data: weeks.map(w => w.negative),
+      borderColor: TREND_CHART_COLORS.negatif.border,
+      backgroundColor: TREND_CHART_COLORS.negatif.fill,
+      borderWidth: isStacked ? 0 : 2,
+      fill: !isStacked,
+      tension: 0.35,
+      pointRadius: isStacked ? 0 : 4,
+      pointHoverRadius: 6,
+      stack: isStacked ? 'week' : undefined,
+    },
+    {
+      label: 'Nötr',
+      data: weeks.map(w => w.neutral),
+      borderColor: TREND_CHART_COLORS.notr.border,
+      backgroundColor: TREND_CHART_COLORS.notr.fill,
+      borderWidth: isStacked ? 0 : 2,
+      fill: !isStacked,
+      tension: 0.35,
+      pointRadius: isStacked ? 0 : 4,
+      pointHoverRadius: 6,
+      stack: isStacked ? 'week' : undefined,
+    },
+  ];
+}
+
+function setTrendView(view) {
+  trendChartView = view;
+  document.querySelectorAll('.trend-view-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.view === view);
+  });
+  if (lastTrendWeeks.length) updateLineChart(lastTrendWeeks);
+}
+
+async function loadWeeklyTrend() {
+  setTrendLoading(true);
+  try {
+    const res = await fetch(`/api/weekly-trend?sentiment=${currentSentiment}&topic=${currentTopic}`);
+    const data = await res.json();
+    lastTrendWeeks = data.weeks || [];
+    renderTrendWeekPills(lastTrendWeeks);
+    updateTrendSummary(lastTrendWeeks);
+    const periodTotal = lastTrendWeeks.reduce((s, w) => s + (w.total || 0), 0);
+    if (periodTotal > 0) {
+      updateLineChart(lastTrendWeeks);
+    } else if (lineChartInstance) {
+      lineChartInstance.destroy();
+      lineChartInstance = null;
+    }
+  } catch (err) {
+    console.error("Haftalık trend hatası:", err);
+  } finally {
+    setTrendLoading(false);
+  }
+}
+
+function updateLineChart(weeks) {
+  const canvas = document.getElementById('lineChart');
+  if (!canvas || weeks.length === 0) return;
+
+  const lineCtx = canvas.getContext('2d');
+  if (lineChartInstance) lineChartInstance.destroy();
+
+  const isStacked = trendChartView === 'stacked';
+  const labels = weeks.map((w, i) => `H${i + 1}`);
+
+  lineChartInstance = new Chart(lineCtx, {
+    type: isStacked ? 'bar' : 'line',
+    data: {
+      labels,
+      datasets: buildTrendDatasets(weeks, trendChartView),
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: {
+          position: 'bottom',
+          labels: { color: '#94a3b8', font: { family: 'Outfit', size: 12 }, padding: 16, usePointStyle: true },
+        },
+        tooltip: {
+          backgroundColor: '#1e293b',
+          titleColor: '#e2e8f0',
+          bodyColor: '#94a3b8',
+          borderColor: '#334155',
+          borderWidth: 1,
+          padding: 12,
+          callbacks: {
+            title: (items) => {
+              const idx = items[0]?.dataIndex;
+              return weeks[idx]?.label || '';
+            },
+            label: (ctx) => {
+              const val = ctx.parsed.y ?? 0;
+              const w = weeks[ctx.dataIndex];
+              const total = w?.total || 1;
+              const pct = w?.total ? Math.round((val / total) * 100) : 0;
+              return ` ${ctx.dataset.label}: ${val} (%${pct})`;
+            },
+            footer: (items) => {
+              const idx = items[0]?.dataIndex;
+              const w = weeks[idx];
+              if (!w) return '';
+              return `Toplam: ${w.total} tweet`;
+            },
+          },
+        },
+      },
+      scales: {
+        x: {
+          stacked: isStacked,
+          grid: { color: 'rgba(148,163,184,0.06)' },
+          ticks: { color: '#64748b', font: { size: 11 } },
+        },
+        y: {
+          stacked: isStacked,
+          beginAtZero: true,
+          grid: { color: 'rgba(148,163,184,0.08)' },
+          ticks: { color: '#64748b', stepSize: 1, precision: 0 },
+          title: { display: true, text: 'Tweet sayısı', color: '#64748b', font: { size: 11 } },
+        },
+      },
+    },
+  });
 }
 
 function setSentimentFilter(filter) {
@@ -821,6 +1235,7 @@ function resetAndLoadTweets() {
     if(list) list.style.opacity = '1';
   });
   loadAIInsights();
+  loadWeeklyTrend();
 }
 
 
@@ -908,6 +1323,7 @@ document.addEventListener('DOMContentLoaded', () => {
   fetchStats();
   loadTopics();
   loadAIInsights();
+  loadWeeklyTrend();
   
   // Gözlemci için sayfa sonuna gizli div ekle
   const listContainer = document.querySelector('.feed-section');
