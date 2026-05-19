@@ -1,7 +1,10 @@
 import os
 import datetime
 import logging
-from sqlalchemy import create_engine, func
+import pandas as pd
+from openpyxl.styles import Alignment
+from sqlalchemy import create_engine, func, text
+from dateutil import parser
 from sqlalchemy.orm import sessionmaker
 from database.models import Base, Tweet, Keyword
 from config import DB_NAME
@@ -21,7 +24,6 @@ def init_db():
     # Kategori sütunu migration (geçiş)
     db = SessionLocal()
     try:
-        from sqlalchemy import text
         res = db.execute(text("PRAGMA table_info(tweets);")).fetchall()
         columns = [row[1] for row in res]
         if "category" not in columns:
@@ -35,33 +37,7 @@ def init_db():
         
     seed_keywords_if_empty()
 
-def save_tweet(tweet_data):
-    """Tek bir tweeti veritabanına kaydeder."""
-    db = SessionLocal()
-    try:
-        # Aynı tweet_id daha önce kaydedilmiş mi kontrol et
-        exists = db.query(Tweet).filter(Tweet.tweet_id == str(tweet_data['tweet_id'])).first()
-        if not exists:
-            new_tweet = Tweet(
-                tweet_id=str(tweet_data['tweet_id']),
-                text=tweet_data['text'],
-                author_username=tweet_data.get('author_username', ''),
-                sentiment=tweet_data.get('sentiment', 'notr'),
-                score=tweet_data.get('score', 0.0),
-                is_ironic=tweet_data.get('is_ironic', False),
-                likes=tweet_data.get('likes', 0),
-                retweets=tweet_data.get('retweets', 0),
-                views=tweet_data.get('views', 0),
-                hashtags=tweet_data.get('hashtags', ''),
-                category=tweet_data.get('category', 'genel')
-            )
-            db.add(new_tweet)
-            db.commit()
-    except Exception as e:
-        db.rollback()
-        logger.error(f"Tweet kaydedilirken hata oluştu: {e}")
-    finally:
-        db.close()
+
 
 def save_tweets_bulk(tweets_list):
     """Çoklu tweetleri tek bir seferde (bulk) veritabanına kaydeder."""
@@ -80,7 +56,6 @@ def save_tweets_bulk(tweets_list):
                 if tweet_data.get('created_at'):
                     try:
                         # Twitter'ın formatı: 2026-05-11T12:00:00.000Z
-                        from dateutil import parser
                         created_dt = parser.isoparse(tweet_data['created_at']).replace(tzinfo=None)
                     except:
                         pass
@@ -265,13 +240,63 @@ def get_recent_tweet_texts(days=7):
     """Son 'days' gün içindeki tweetlerin metinlerini döndürür. Spam/Kopya filtresi için kullanılır."""
     db = SessionLocal()
     try:
-        from datetime import datetime, timedelta
-        cutoff_date = datetime.utcnow() - timedelta(days=days)
+        cutoff_date = datetime.datetime.utcnow() - datetime.timedelta(days=days)
         recent_tweets = db.query(Tweet.text).filter(Tweet.created_at >= cutoff_date).all()
         return [t[0] for t in recent_tweets if t[0]]
     except Exception as e:
         logger.error(f"Geçmiş tweet metinleri çekilirken hata: {e}")
         return []
+    finally:
+        db.close()
+
+def export_all_tweets_to_excel(output_target):
+    """
+    Tüm tweetleri veritabanından çeker ve biçimlendirilmiş bir Excel dosyası olarak
+    verilen output_target (dosya yolu veya BytesIO nesnesi) üzerine yazar.
+    """
+    db = SessionLocal()
+    try:
+        all_tweets = db.query(Tweet).all()
+        if not all_tweets:
+            return False
+            
+        data = []
+        for t in all_tweets:
+            data.append({
+                "Tarih": t.created_at.strftime("%Y-%m-%d %H:%M") if t.created_at else "",
+                "Kullanıcı": t.author_username,
+                "Tweet Metni": t.text,
+                "Duygu Durumu": t.sentiment.upper() if t.sentiment else "",
+                "Skor": round(t.score, 2) if t.score else 0,
+                "İroni mi?": "Evet" if t.is_ironic else "Hayır",
+                "Beğeni": t.likes,
+                "RT": t.retweets,
+                "Görüntülenme": t.views
+            })
+            
+        df = pd.DataFrame(data)
+        
+        with pd.ExcelWriter(output_target, engine='openpyxl') as writer:
+            df.to_excel(writer, index=False, sheet_name='Tum Tweetler')
+            worksheet = writer.sheets['Tum Tweetler']
+            
+            # Biçimlendirmeler
+            worksheet.column_dimensions['A'].width = 18
+            worksheet.column_dimensions['B'].width = 18
+            worksheet.column_dimensions['C'].width = 80
+            worksheet.column_dimensions['D'].width = 15
+            worksheet.column_dimensions['E'].width = 10
+            worksheet.column_dimensions['F'].width = 12
+            worksheet.column_dimensions['G'].width = 10
+            worksheet.column_dimensions['H'].width = 10
+            worksheet.column_dimensions['I'].width = 15
+            
+            for cell in worksheet['C']:
+                cell.alignment = Alignment(wrap_text=True)
+        return True
+    except Exception as e:
+        logger.error(f"Excel export hatası: {e}")
+        return False
     finally:
         db.close()
 

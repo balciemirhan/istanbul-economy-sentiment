@@ -7,9 +7,11 @@ if sys.stdout.encoding.lower() != 'utf-8':
 if sys.stderr.encoding.lower() != 'utf-8':
     sys.stderr.reconfigure(encoding='utf-8')
 
-from database.db_manager import init_db, save_tweets_bulk
+from database.db_manager import init_db, save_tweets_bulk, get_recent_tweet_texts, export_all_tweets_to_excel
 from api.tweet_fetcher import TweetFetcher
 from nlp.sentiment_analyzer import SentimentAnalyzer
+from nlp.text_cleaner import clean_tweet_text, contains_profanity
+from datetime import datetime
 
 try:
     from thefuzz import fuzz
@@ -51,9 +53,6 @@ def run_pipeline(max_tweets=100, days=7, status_callback=None):
 
     # 4. Analiz ve Kayıt
     update_status("Adım 2: Duygu analizi ve metin temizliği yapılıyor...")
-    
-    from nlp.text_cleaner import clean_tweet_text, contains_profanity
-    from database.db_manager import get_recent_tweet_texts
     
     if fuzz is None:
         logger.error("thefuzz kütüphanesi eksik! 'pip install thefuzz python-Levenshtein' komutunu çalıştırın.")
@@ -127,51 +126,14 @@ def run_pipeline(max_tweets=100, days=7, status_callback=None):
     # Her işlem bitiminde (yeni veri gelse de gelmese de) TÜM veritabanının güncel yedeğini Excel olarak reports/ klasörüne al.
     try:
         update_status("Adım 4: Veritabanının tam (full) yedeği Excel olarak oluşturuluyor...")
-        import pandas as pd
-        from datetime import datetime
-        from database.db_manager import SessionLocal, Tweet
+        os.makedirs("reports", exist_ok=True)
+        excel_path = f"reports/istanbul_tum_yedek_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx"
         
-        db = SessionLocal()
-        all_tweets = db.query(Tweet).all()
-        db.close()
-        
-        if all_tweets:
-            data = []
-            for t in all_tweets:
-                data.append({
-                    "Tarih": t.created_at.strftime("%Y-%m-%d %H:%M") if t.created_at else "",
-                    "Kullanıcı": t.author_username,
-                    "Tweet Metni": t.text,
-                    "Duygu Durumu": t.sentiment.upper() if t.sentiment else "",
-                    "Skor": round(t.score, 2) if t.score else 0,
-                    "İroni mi?": "Evet" if t.is_ironic else "Hayır",
-                    "Beğeni": t.likes,
-                    "RT": t.retweets,
-                    "Görüntülenme": t.views
-                })
-                
-            os.makedirs("reports", exist_ok=True)
-            excel_path = f"reports/istanbul_tum_yedek_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx"
-            df = pd.DataFrame(data)
+        if export_all_tweets_to_excel(excel_path):
+            update_status("Tam Excel yedeği başarıyla alındı.")
+        else:
+            update_status("Excel yedeği alınamadı (Veri yok veya hata oluştu).")
             
-            with pd.ExcelWriter(excel_path, engine='openpyxl') as writer:
-                df.to_excel(writer, index=False, sheet_name='Tüm Yedek')
-                worksheet = writer.sheets['Tüm Yedek']
-                # Sütunları geniş ve okunaklı yap
-                worksheet.column_dimensions['A'].width = 18
-                worksheet.column_dimensions['B'].width = 18
-                worksheet.column_dimensions['C'].width = 80
-                worksheet.column_dimensions['D'].width = 15
-                worksheet.column_dimensions['E'].width = 10
-                worksheet.column_dimensions['F'].width = 12
-                worksheet.column_dimensions['G'].width = 10
-                worksheet.column_dimensions['H'].width = 10
-                worksheet.column_dimensions['I'].width = 15
-                from openpyxl.styles import Alignment
-                for cell in worksheet['C']:
-                    cell.alignment = Alignment(wrap_text=True)
-                    
-            update_status(f"Tam Excel yedeği başarıyla alındı (Toplam {len(all_tweets)} Tweet).")
     except Exception as e:
         logger.error(f"Excel yedeği alınırken hata: {e}")
         

@@ -2,8 +2,12 @@ import re
 
 # İroni ve kinaye belirten Türkçe kelime öbekleri
 IRONY_KEYWORDS = [
-    "aa", "aha", "keşke", "ya", "vay", "maşallah", "ne güzel",
-    "harika", "süper", "mükemmel", "aynen", "tabi canım", "yersen"
+    "harika", "mükemmel", "süper", "muazzam", "şahane", "uçuyoruz", "şahlanıyoruz", 
+    "kıskanıyor", "büyüyoruz", "asgari ücretli her gün antrikot yiyor", "tabi canım", 
+    "aynen", "yersen", "kesin yaşanmıştır bu", "büyük oyun", "dış güçler", 
+    "avrupa bizi kıskanıyor", "almanya bitmiş", "ekonomi çok iyi", "telefonunu çıkar", 
+    "şükredin", "porsiyonları küçültün", "aa ne güzel", "maşallah", "nazar değmesin", 
+    "vay be", "keşke", "yersen", "ironidir", "ironi", "sarkasm", "sarkastik"
 ]
 
 # Performans için regex patternini bir kere derliyoruz
@@ -15,14 +19,18 @@ def detect_irony(text):
     """
     text_lower = text.lower()
     
+    # Explicit ironi işaretleri
+    if any(marker in text_lower for marker in ["(ironi)", "/s", "(!)", "(?)"]):
+        return True
+    
     # Anahtar kelime var mı? (Derlenmiş regex kullanıyoruz)
     has_irony_pattern = bool(IRONY_PATTERN.search(text_lower))
     
     # Aşırı noktalama (!! veya ??) var mı?
     has_excessive_punctuation = text.count("!") > 1 or text.count("?") > 1
     
-    # Harf uzatması (çoooooook, mükemmmeeeell) var mı?
-    has_repeated_letters = any(c * 3 in text_lower for c in "aeıiouü")
+    # Harf uzatması (çoooooook, mükemmmeeeell, büyükkkk vs) var mı? 
+    has_repeated_letters = bool(re.search(r'([a-zçğıöşü])\1{2,}', text_lower))
     
     # Eğer ironik kelimelerden biri varsa VE (aşırı noktalama veya harf uzatması) varsa
     if has_irony_pattern and (has_excessive_punctuation or has_repeated_letters):

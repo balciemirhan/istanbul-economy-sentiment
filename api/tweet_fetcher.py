@@ -13,7 +13,6 @@ logger = logging.getLogger(__name__)
 
 class Config:
     MONTHLY_TWEET_BUDGET = 10000   # Aylık maksimum çekilecek tweet sınırı
-    MAX_RESULTS_PER_REQUEST = 0  # X API max per request
     REQUEST_DELAY = 1.0            # İstekler arası bekleme (saniye)
 
     # Filtreleme Ayarları
@@ -282,7 +281,7 @@ class TweetFetcher:
                     time.sleep(config.REQUEST_DELAY)
 
                 except Exception as e:
-                    logger.error(f"[{cat_name}] {start_date.strftime('%Y-%m-%d')} hatası: {e}")
+                    logger.error(f"[{cat_name}] {dr['start'].strftime('%Y-%m-%d')} hatası: {e}")
                     # Hata olsa bile diğer günlere geçmesi için break yerine pass/continue yapıyoruz
                     continue
 
