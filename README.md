@@ -1,5 +1,12 @@
 # 📊 İstanbul Ekonomi Analizi (X/Twitter Sentiment Tracker)
 
+> [!IMPORTANT]
+> ### 🚀 Önemli Duyuru: Sürüm 2.0 (v2 Upgrade) Yayınlandı!
+> Bu projenin çok daha gelişmiş, bizzat ince ayar (Fine-Tuning) yapılmış **128k BERTurk** modelini kullanan ikinci versiyonuna **[istanbul-economy-sentiment-v2](https://github.com/balciemirhan/istanbul-economy-sentiment-v2)** adresinden ulaşabilirsiniz.
+> 
+> * **Eski Sürüm (v1 - Bu Proje):** Genel amaçlı hazır Savaş BERT (`savasy/bert-base-turkish-sentiment-cased`) modelini kullanmaktadır ve doğruluk oranı daha kısıtlıdır.
+> * **Yeni Sürüm (v2):** Savaş BERT modelini tamamen devre dışı bırakarak; bu projenin özel 5.000+ satırlık tweet veri setiyle bizzat ince ayar yapılmış 128k BERTurk modelini (`Emirhan41/bert-base-turkish-128k-istanbul-sentiment`) kullanır. Bu sayede yerel argo, ironi, sarkazm ve İstanbul ekonomi gündemine dair hassas anlamlandırma başarısı olağanüstü düzeye çıkarılmıştır!
+
 Bu proje, İstanbul'daki ekonomik gündemi X (Twitter) üzerinden takip eden, gelişmiş Doğal Dil İşleme (NLP) yetenekleriyle halkın duygusunu analiz eden ve sonuçları dinamik bir web arayüzünde (Dashboard) sunan tam otomatik bir veri toplama sistemidir.
 
 ## 🎯 Projenin Amacı
